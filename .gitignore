@@ -1,0 +1,7 @@
+.vscode/
+
+[Bb]in/
+[Oo]bj/
+
+*.user
+*.suo
