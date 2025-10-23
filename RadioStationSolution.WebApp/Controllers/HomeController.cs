@@ -1,31 +1,68 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using RadioStationSolution.WebApp.Models;
+using OnlineRadioStation.Services;
+using System.Diagnostics;
+using System.Threading.Tasks; // Додайте цей using
 
-namespace RadioStationSolution.WebApp.Controllers;
-
-public class HomeController : Controller
+namespace RadioStationSolution.WebApp.Controllers
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
+    public class HomeController : Controller
     {
-        _logger = logger;
-    }
+        private readonly IUserService _userService;
 
-    public IActionResult Index()
-    {
-        return View();
-    }
+        public HomeController(IUserService userService)
+        {
+            _userService = userService;
+        }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
+        // Метод для показу сторінки входу (GET-запит)
+        [HttpGet]
+        public IActionResult Index()
+        {
+            return View();
+        }
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        // Метод для обробки даних з форми входу (POST-запит)
+        [HttpPost]
+        public async Task<IActionResult> Index(string username, string password)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                ViewBag.Error = "Будь ласка, введіть логін та пароль.";
+                return View(); // Повертаємо на сторінку входу з помилкою
+            }
+
+            var user = await _userService.AuthenticateUserAsync(username, password);
+
+            if (user != null)
+            {
+                // Успішний вхід - перенаправляємо на нову сторінку Dashboard
+                // TODO: Зберегти інформацію про користувача в сесії або cookie
+                return RedirectToAction("Dashboard");
+            }
+            else
+            {
+                // Невдалий вхід
+                ViewBag.Error = "Неправильний логін або пароль.";
+                return View(); // Повертаємо на сторінку входу з помилкою
+            }
+        }
+
+        // Нова сторінка для успішного входу
+        public IActionResult Dashboard()
+        {
+            // TODO: Передати ім'я користувача на сторінку
+            return View();
+        }
+
+        // Сторінка реєстрації
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
     }
 }

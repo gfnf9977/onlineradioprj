@@ -17,6 +17,15 @@ builder.Services.AddDbContext<ApplicationContext>(options =>
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 
 builder.Services.AddScoped<IStationService, StationService>();
+// ...
+// Реєструємо репозиторії
+builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>(); // <--- ДОДАЙТЕ ЦЕЙ РЯДОК
+
+// Реєструємо сервіси
+builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddScoped<IUserService, UserService>(); // <--- ДОДАЙТЕ ЦЕЙ РЯДОК
+// ...
 
 var app = builder.Build();
 
