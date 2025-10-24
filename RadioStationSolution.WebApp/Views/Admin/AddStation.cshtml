@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Додати станцію";
+}
+
+<h1>Додати нову станцію</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="AddStation" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group mb-3">
+                <label for="stationName" class="control-label">Назва станції</label>
+                <input name="stationName" class="form-control" required />
+            </div>
+            <div class="form-group mb-3">
+                <label for="description" class="control-label">Опис</label>
+                <textarea name="description" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Створити" class="btn btn-primary" />
+                <a asp-action="ManageStations" class="btn btn-secondary">Скасувати</a>
+            </div>
+        </form>
+    </div>
+</div>

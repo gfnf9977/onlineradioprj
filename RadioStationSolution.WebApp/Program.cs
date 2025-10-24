@@ -1,31 +1,23 @@
 using Microsoft.EntityFrameworkCore;
-using OnlineRadioStation.Data; 
-using OnlineRadioStation.Services; 
+using OnlineRadioStation.Data;
+using OnlineRadioStation.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddControllersWithViews();
 
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddScoped<IStationService, StationService>();
-// ...
-// Реєструємо репозиторії
-builder.Services.AddScoped<IStationRepository, StationRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>(); // <--- ДОДАЙТЕ ЦЕЙ РЯДОК
+builder.Services.AddScoped<IUserService, UserService>();
 
-// Реєструємо сервіси
-builder.Services.AddScoped<IStationService, StationService>();
-builder.Services.AddScoped<IUserService, UserService>(); // <--- ДОДАЙТЕ ЦЕЙ РЯДОК
-// ...
+
+
 
 var app = builder.Build();
 
@@ -36,15 +28,16 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); 
 app.UseStaticFiles(); 
 
-app.UseRouting();
+app.UseRouting(); 
 
-app.UseAuthorization();
+app.UseAuthorization(); 
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+
+app.Run(); 

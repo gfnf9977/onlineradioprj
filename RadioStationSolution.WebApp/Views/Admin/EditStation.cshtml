@@ -1,0 +1,35 @@
+@model OnlineRadioStation.Domain.RadioStationEntity
+
+@{
+    ViewData["Title"] = "Редагувати станцію";
+}
+
+<h1>Редагувати станцію</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="EditStation" asp-route-id="@Model.StationId" method="post">
+             @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="StationId" /> @* Приховане поле для ID *@
+
+            <div class="form-group mb-3">
+                <label asp-for="StationName" class="control-label">Назва станції</label>
+                <input asp-for="StationName" class="form-control" required />
+                <span asp-validation-for="StationName" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="Description" class="control-label">Опис</label>
+                <textarea asp-for="Description" class="form-control"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+             @* Поле CreatedById не редагуємо *@
+             <input type="hidden" asp-for="CreatedById" />
+
+            <div class="form-group">
+                <input type="submit" value="Зберегти" class="btn btn-primary" />
+                <a asp-action="ManageStations" class="btn btn-secondary">Скасувати</a>
+            </div>
+        </form>
+    </div>
+</div>

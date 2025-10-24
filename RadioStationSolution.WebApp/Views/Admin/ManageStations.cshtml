@@ -1,0 +1,42 @@
+@model IEnumerable<OnlineRadioStation.Domain.RadioStationEntity>
+
+@{
+    ViewData["Title"] = "Керування станціями";
+}
+
+<h1>Керування станціями</h1>
+
+<p>
+    <a asp-action="AddStation" class="btn btn-success">Додати нову станцію</a>
+</p>
+
+@if(TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Назва</th>
+            <th>Опис</th>
+            <th>Дії</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model!)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.StationName)</td>
+                <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                <td>
+                    <a asp-action="EditStation" asp-route-id="@item.StationId" class="btn btn-sm btn-warning">Редагувати</a> |
+                    <form asp-action="DeleteStation" asp-route-id="@item.StationId" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Ви впевнені, що хочете видалити цю станцію?');">Видалити</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

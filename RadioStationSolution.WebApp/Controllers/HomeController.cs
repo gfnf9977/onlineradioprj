@@ -1,68 +1,94 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineRadioStation.Services;
+using System;
 using System.Diagnostics;
-using System.Threading.Tasks; // Додайте цей using
+using System.Threading.Tasks;
 
 namespace RadioStationSolution.WebApp.Controllers
 {
     public class HomeController : Controller
     {
         private readonly IUserService _userService;
+        private readonly IStationService _stationService; 
 
-        public HomeController(IUserService userService)
+        public HomeController(IUserService userService, IStationService stationService)
         {
             _userService = userService;
+            _stationService = stationService; 
         }
 
-        // Метод для показу сторінки входу (GET-запит)
         [HttpGet]
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public IActionResult Index() { return View(); }
 
-        // Метод для обробки даних з форми входу (POST-запит)
         [HttpPost]
         public async Task<IActionResult> Index(string username, string password)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
                 ViewBag.Error = "Будь ласка, введіть логін та пароль.";
-                return View(); // Повертаємо на сторінку входу з помилкою
+                return View();
             }
-
             var user = await _userService.AuthenticateUserAsync(username, password);
 
             if (user != null)
             {
-                // Успішний вхід - перенаправляємо на нову сторінку Dashboard
-                // TODO: Зберегти інформацію про користувача в сесії або cookie
-                return RedirectToAction("Dashboard");
+                switch (user.Role.ToLower())
+                {
+                    case "admin":
+                        return RedirectToAction("AdminDashboard");
+                    case "dj":
+                        return RedirectToAction("DjDashboard");
+                    case "user":
+                    default:
+                        return RedirectToAction("UserDashboard");
+                }
             }
             else
             {
-                // Невдалий вхід
                 ViewBag.Error = "Неправильний логін або пароль.";
-                return View(); // Повертаємо на сторінку входу з помилкою
+                return View();
             }
         }
 
-        // Нова сторінка для успішного входу
-        public IActionResult Dashboard()
-        {
-            // TODO: Передати ім'я користувача на сторінку
-            return View();
-        }
-
-        // Сторінка реєстрації
-        public IActionResult Register()
+        public IActionResult AdminDashboard()
         {
             return View();
         }
 
-        public IActionResult Privacy()
+        public IActionResult DjDashboard()
         {
             return View();
         }
+
+        public async Task<IActionResult> UserDashboard()
+        {
+            var stations = await _stationService.GetAllStationsAsync();
+            return View(stations);
+        }
+
+        [HttpGet]
+        public IActionResult Register() { return View(); }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(string username, string email, string password)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(email))
+            {
+                ViewBag.Error = "Будь ласка, заповніть усі поля.";
+                return View();
+            }
+            try
+            {
+                await _userService.CreateUserAsync(username, password, email);
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                return View();
+            }
+        }
+
+        public IActionResult Privacy() { return View(); }
     }
 }
