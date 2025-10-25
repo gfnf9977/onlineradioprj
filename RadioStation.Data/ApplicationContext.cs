@@ -14,9 +14,20 @@ namespace OnlineRadioStation.Data
         public DbSet<SavedStation> SavedStations { get; set; }
         public DbSet<PlaybackQueue> PlaybackQueues { get; set; }
 
+        public DbSet<FavoriteStation> FavoriteStations { get; set; }
+
         public ApplicationContext(DbContextOptions<ApplicationContext> options)
             : base(options)
         {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+             modelBuilder.Entity<FavoriteStation>()
+                 .HasIndex(fs => new { fs.UserId, fs.StationId })
+                 .IsUnique();
         }
     }
 }

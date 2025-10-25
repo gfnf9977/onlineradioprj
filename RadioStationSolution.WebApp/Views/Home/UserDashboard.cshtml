@@ -24,9 +24,22 @@
         @foreach (var station in Model!)
         {
             <div class="dashboard-card">
-                <h3>@station.StationName</h3>
-                <p>@station.Description</p>
-                <a href="#" class="btn btn-primary">Слухати</a> @* Поки що кнопка неактивна *@
+                <div> @* Обгортка для контенту *@
+                    <h3>@station.StationName</h3>
+                    <p>@station.Description</p>
+                </div>
+                <div class="card-actions"> @* Блок для кнопок *@
+                    <a href="#" class="btn btn-primary btn-sm">Слухати</a>
+
+                    @* === ФОРМА ДЛЯ ДОДАВАННЯ В УЛЮБЛЕНІ === *@
+                    <form asp-controller="Favorites" asp-action="Add" asp-route-stationId="@station.StationId" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-heart"></i> Додати до улюблених @* Потрібно підключити Bootstrap Icons для іконки *@
+                        </button>
+                    </form>
+                    @* ====================================== *@
+                </div>
             </div>
         }
     </div>

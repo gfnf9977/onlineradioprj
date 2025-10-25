@@ -19,6 +19,18 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDjStreamRepository, DjStreamRepository>();
 builder.Services.AddScoped<IDjStreamService, DjStreamService>();
 
+// ...
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<IDjStreamRepository, DjStreamRepository>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>(); 
+
+// ...
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddScoped<IDjStreamService, DjStreamService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>(); 
+// ...
 
 var app = builder.Build();
 
