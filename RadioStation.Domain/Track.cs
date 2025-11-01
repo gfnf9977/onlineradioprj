@@ -16,5 +16,6 @@ namespace OnlineRadioStation.Domain
         public ICollection<PlaybackQueue> Queues { get; set; } = new List<PlaybackQueue>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<LikeDislike> LikesDislikes { get; set; } = new List<LikeDislike>();
+        public int QueuePosition { get; set; } = 0;
     }
 }

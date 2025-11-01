@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OnlineRadioStation.Domain
 {
-    public class PlaybackQueue
+    public partial class PlaybackQueue
     {
         [Key]
         public Guid QueueId { get; set; }

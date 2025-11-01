@@ -10,6 +10,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddScoped<StreamingService>();
+
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
@@ -33,11 +35,15 @@ app.UseStaticFiles();
 
 app.UseRouting(); 
 
-app.UseAuthorization(); 
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
+    
+app.MapControllerRoute(
+    name: "test",
+    pattern: "test/{action=IteratorTest}",
+    defaults: new { controller = "Test" });
 
 app.Run(); 
