@@ -21,7 +21,7 @@ builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
-// builder.Services.AddScoped<StreamingService>(); // <-- Ви вже додали це вище, дублікат не потрібен
+builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
 
 var app = builder.Build();
 
@@ -41,7 +41,7 @@ provider.Mappings[".ts"] = "video/mp2t"; // Тип для HLS сегмента
 
 app.UseStaticFiles(new StaticFileOptions
 {
-    ContentTypeProvider = provider // Передаємо наші налаштування
+    ContentTypeProvider = provider 
 });
 // --------------------------------
 

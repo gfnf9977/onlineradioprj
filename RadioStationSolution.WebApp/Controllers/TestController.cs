@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineRadioStation.Domain;
 using OnlineRadioStation.Services;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RadioStationSolution.WebApp.Controllers
@@ -23,8 +24,6 @@ namespace RadioStationSolution.WebApp.Controllers
         {
             var queue = new PlaybackQueue();
             _streamingService.StartStreaming(queue);
-
-
             return new ContentResult
             {
                 Content = "<h3 style='color: green;'>ЛР4: Iterator — УСПІХ!</h3>" +
@@ -37,7 +36,6 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> AdapterTest()
         {
             var mp3Path = Path.Combine(_webRootPath, "samples", "demo.mp3");
-
             if (!System.IO.File.Exists(mp3Path))
             {
                 return new ContentResult
@@ -48,14 +46,10 @@ namespace RadioStationSolution.WebApp.Controllers
                     ContentType = "text/html; charset=utf-8"
                 };
             }
-
             try
             {
                 var hlsUrl = await _streamingService.CreateHlsStreamAsync(mp3Path, 128);
-
-
                 var webPath = "/" + Path.GetRelativePath(_webRootPath, hlsUrl).Replace("\\", "/");
-
                 return new ContentResult
                 {
                     Content = "<div style='font-family: Arial; padding: 20px; background: #f0f8ff; border-radius: 10px;'>" +
@@ -70,13 +64,28 @@ namespace RadioStationSolution.WebApp.Controllers
             }
             catch (System.Exception ex)
             {
-
                 return new ContentResult
                 {
                     Content = $"<p style='color: red;'>Помилка FFmpeg: {System.Web.HttpUtility.HtmlEncode(ex.Message)}</p>",
                     ContentType = "text/html; charset=utf-8"
                 };
             }
+        }
+
+        [HttpGet("factory")]
+        public IActionResult FactoryTest()
+        {
+            var results = new[]
+            {
+                _streamingService.StartStreamWithFactory(64, "Song A"),
+                _streamingService.StartStreamWithFactory(128, "Song B"),
+                _streamingService.StartStreamWithFactory(300, "Song C")
+            };
+            var html = "<h3 style='color: green;'>Factory Method:</h3>" +
+                       "<ul>" +
+                       string.Join("", results.Select(r => $"<li>{r}</li>")) +
+                       "</ul>";
+            return Content(html, "text/html; charset=utf-8");
         }
     }
 }
