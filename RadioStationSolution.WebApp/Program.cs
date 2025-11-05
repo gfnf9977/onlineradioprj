@@ -23,6 +23,11 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
 builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
 
+builder.Services.AddScoped<Normalizer>();
+builder.Services.AddScoped<Encoder>();
+builder.Services.AddScoped<Tagger>();
+builder.Services.AddScoped<IAudioProcessor, AudioProcessingFacade>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

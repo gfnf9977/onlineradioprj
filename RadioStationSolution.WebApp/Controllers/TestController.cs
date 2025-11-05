@@ -87,5 +87,20 @@ namespace RadioStationSolution.WebApp.Controllers
                        "</ul>";
             return Content(html, "text/html; charset=utf-8");
         }
+
+        [HttpGet("facade")]
+        public IActionResult FacadeTest()
+        {
+            var input = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "samples", "demo.mp3");
+            if (!System.IO.File.Exists(input))
+                return Content("<p style='color:red'>Додай demo.mp3 у wwwroot/samples/</p>", "text/html");
+            var result = _streamingService.PrepareTrack(input);
+            return Content(
+                $"<h3 style='color:green'>ЛР7: Facade — УСПІХ!</h3>" +
+                $"<p>Оброблено: <code>{Path.GetFileName(result)}</code></p>" +
+                "<p>Переглянь консоль (Output → Debug)</p>",
+                "text/html; charset=utf-8"
+            );
+        }
     }
 }

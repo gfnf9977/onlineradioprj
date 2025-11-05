@@ -1,9 +1,7 @@
-using System.Threading.Tasks;
-
 namespace OnlineRadioStation.Domain
 {
-    public interface IAudioConverter
+    public interface IAudioProcessor
     {
-        Task<string> ConvertToHlsAsync(string inputPath, int bitrate);
+        string Process(string inputPath);
     }
 }
