@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineRadioStation.Domain;
 using OnlineRadioStation.Services;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -98,6 +99,21 @@ namespace RadioStationSolution.WebApp.Controllers
             return Content(
                 $"<h3 style='color:green'>ЛР7: Facade — УСПІХ!</h3>" +
                 $"<p>Оброблено: <code>{Path.GetFileName(result)}</code></p>" +
+                "<p>Переглянь консоль (Output → Debug)</p>",
+                "text/html; charset=utf-8"
+            );
+        }
+
+        // Метод для тестування Visitor (лр8)
+        [HttpGet("visitor")]
+        public IActionResult VisitorTest()
+        {
+            var track = new Track { Title = "Song 1", Duration = TimeSpan.FromMinutes(3) };
+            var stream = new DjStream { StreamId = Guid.NewGuid(), StartTime = DateTime.Now, EndTime = DateTime.Now.AddMinutes(30) };
+            var queue = new PlaybackQueue { QueueId = Guid.NewGuid(), QueuePosition = 1 };
+            _streamingService.CollectStats(track, stream, queue);
+            return Content(
+                "<h3 style='color: green;'>ЛР8: Visitor — УСПІХ!</h3>" +
                 "<p>Переглянь консоль (Output → Debug)</p>",
                 "text/html; charset=utf-8"
             );

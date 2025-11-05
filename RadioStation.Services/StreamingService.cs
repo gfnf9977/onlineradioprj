@@ -1,5 +1,3 @@
-// Services/StreamingService.cs
-
 using OnlineRadioStation.Domain;
 using System;
 using System.IO;
@@ -11,7 +9,6 @@ namespace OnlineRadioStation.Services
     {
         // ЛР5: Adapter
         private readonly IAudioConverter? _converter;
-
         // ЛР7: Facade
         private readonly IAudioProcessor? _audioProcessor;
 
@@ -28,7 +25,6 @@ namespace OnlineRadioStation.Services
         {
             var iterator = queue.CreateIterator();
             iterator.First();
-
             Console.WriteLine("=== Початок стримінгу (Iterator) ===");
             while (!iterator.IsDone())
             {
@@ -44,7 +40,6 @@ namespace OnlineRadioStation.Services
         {
             if (_converter == null)
                 throw new InvalidOperationException("IAudioConverter не зареєстровано в DI");
-
             return await _converter.ConvertToHlsAsync(mp3Path, bitrate);
         }
 
@@ -61,8 +56,19 @@ namespace OnlineRadioStation.Services
         {
             if (_audioProcessor == null)
                 throw new InvalidOperationException("IAudioProcessor не зареєстровано в DI");
-
             return _audioProcessor.Process(mp3Path);
+        }
+
+        // Метод для збору статистики (лр 8)
+        public void CollectStats(Track track, DjStream stream, PlaybackQueue queue)
+        {
+            var visitor = new ListeningStatsVisitor();
+            track.Accept(visitor);
+            stream.Accept(visitor);
+            queue.Accept(visitor);
+            Console.WriteLine(
+                $"[Stats] Загальна статистика: {visitor.TotalListenedMinutes} хв, " +
+                $"{visitor.TotalSessions} сесій, {visitor.TotalTracks} треків");
         }
     }
 }

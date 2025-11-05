@@ -28,6 +28,8 @@ builder.Services.AddScoped<Encoder>();
 builder.Services.AddScoped<Tagger>();
 builder.Services.AddScoped<IAudioProcessor, AudioProcessingFacade>();
 
+builder.Services.AddScoped<ListeningStatsVisitor>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

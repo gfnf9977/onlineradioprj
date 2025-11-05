@@ -11,9 +11,14 @@ namespace OnlineRadioStation.Domain
         public Guid StationId { get; set; }
         public Guid AddedById { get; set; }
         public int QueuePosition { get; set; }
-
         public Track Track { get; set; } = null!;
         public RadioStationEntity Station { get; set; } = null!;
         public User AddedBy { get; set; } = null!;
+
+        // для патерну Visitor
+        public void Accept(IStatsVisitor visitor)
+        {
+            visitor.VisitQueue(this);
+        }
     }
 }

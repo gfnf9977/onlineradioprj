@@ -11,8 +11,13 @@ namespace OnlineRadioStation.Domain
         public Guid DjId { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-
         public RadioStationEntity Station { get; set; } = null!;
         public User Dj { get; set; } = null!;
+
+        // для патерну Visitor
+        public void Accept(IStatsVisitor visitor)
+        {
+            visitor.VisitStream(this);
+        }
     }
 }
