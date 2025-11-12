@@ -10,7 +10,8 @@ namespace OnlineRadioStation.Services
         Task<IEnumerable<RadioStationEntity>> GetAllStationsAsync();
         Task<RadioStationEntity?> GetStationByIdAsync(Guid id); 
         Task<RadioStationEntity> AddStationAsync(string name, string description, Guid createdById); 
-        Task UpdateStationAsync(Guid id, string name, string description); 
+        Task UpdateStationAsync(Guid id, string name, string description);
         Task DeleteStationAsync(Guid id); 
+        Task<RadioStationEntity?> GetStationWithPlaylistAsync(Guid id);
     }
 }

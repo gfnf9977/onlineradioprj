@@ -1,0 +1,56 @@
+@* Вказуємо, що наша модель - це реальна сутність RadioStationEntity *@
+@model OnlineRadioStation.Domain.RadioStationEntity
+
+@{
+    ViewData["Title"] = $"Слухати: {Model.StationName}";
+
+    // === ОСЬ ВІН, "ОЖИВЛЕНИЙ" ІТЕРАТОР! ===
+    // Model - це наш 'RadioStationEntity', який реалізує 'IStationPlaylist'.
+    // Ми викликаємо його метод CreateIterator(),
+    // який повертає ітератор по РЕАЛЬНИХ треках з БД.
+    var iterator = Model.CreateIterator();
+    iterator.First();
+}
+
+<h1>Зараз грає: @Model.StationName</h1>
+<p>@Model.Description</p>
+
+<hr />
+
+@* Перевіряємо, чи ітератор не порожній *@
+@if (iterator.IsDone())
+{
+    <div class="alert alert-info">
+        Плейлист цієї станції наразі порожній.
+    </div>
+}
+else
+{
+    <h3>Плейлист станції:</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Назва треку</th>
+                <th>Тривалість</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{ int position = 1; }
+            @while (!iterator.IsDone())
+            {
+                // Отримуємо поточний трек з ітератора
+                var track = iterator.Current();
+                
+                <tr>
+                    <td>@(position++)</td>
+                    <td>@track.Title</td>
+                    <td>@track.Duration.ToString("g")</td>
+                </tr>
+
+                // Переходимо до наступного треку
+                iterator.Next();
+            }
+        </tbody>
+    </table>
+}

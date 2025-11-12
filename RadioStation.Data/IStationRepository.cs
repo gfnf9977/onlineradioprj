@@ -8,6 +8,6 @@ namespace OnlineRadioStation.Data
 
     public interface IStationRepository : IRepository<RadioStationEntity, Guid>
     {
-
+        Task<RadioStationEntity?> GetStationWithPlaylistAsync(Guid id);
     }
 }

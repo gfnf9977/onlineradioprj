@@ -12,7 +12,7 @@ namespace OnlineRadioStation.Data
         public DbSet<LikeDislike> LikesDislikes { get; set; }
         public DbSet<DjStream> Streams { get; set; }
         public DbSet<SavedStation> SavedStations { get; set; }
-        public DbSet<PlaybackQueue> PlaybackQueues { get; set; }
+        public DbSet<PlaybackQueue> PlaybackQueue { get; set; }
 
         public ApplicationContext(DbContextOptions<ApplicationContext> options)
             : base(options)

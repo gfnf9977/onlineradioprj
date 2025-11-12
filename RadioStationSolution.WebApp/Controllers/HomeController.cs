@@ -9,12 +9,12 @@ namespace RadioStationSolution.WebApp.Controllers
     public class HomeController : Controller
     {
         private readonly IUserService _userService;
-        private readonly IStationService _stationService; 
+        private readonly IStationService _stationService;
 
         public HomeController(IUserService userService, IStationService stationService)
         {
             _userService = userService;
-            _stationService = stationService; 
+            _stationService = stationService;
         }
 
         [HttpGet]
@@ -29,7 +29,6 @@ namespace RadioStationSolution.WebApp.Controllers
                 return View();
             }
             var user = await _userService.AuthenticateUserAsync(username, password);
-
             if (user != null)
             {
                 switch (user.Role.ToLower())
@@ -64,6 +63,17 @@ namespace RadioStationSolution.WebApp.Controllers
         {
             var stations = await _stationService.GetAllStationsAsync();
             return View(stations);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Listen(Guid id)
+        {
+            var station = await _stationService.GetStationWithPlaylistAsync(id);
+            if (station == null)
+            {
+                return NotFound();
+            }
+            return View(station);
         }
 
         [HttpGet]

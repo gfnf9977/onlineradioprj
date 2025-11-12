@@ -13,22 +13,36 @@ namespace RadioStationSolution.WebApp.Controllers
     {
         private readonly StreamingService _streamingService;
         private readonly string _webRootPath;
+        private readonly IStationService _stationService;
 
-        public TestController(StreamingService streamingService)
+        public TestController(StreamingService streamingService, IStationService stationService)
         {
             _streamingService = streamingService;
+            _stationService = stationService;
             _webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         }
 
         [HttpGet("iterator")]
-        public IActionResult IteratorTest()
+        public async Task<IActionResult> IteratorTest()
         {
-            var queue = new PlaybackQueue();
-            _streamingService.StartStreaming(queue);
+            var anyStation = (await _stationService.GetAllStationsAsync()).FirstOrDefault();
+            if (anyStation == null)
+            {
+                return new ContentResult
+                {
+                    Content = "<h3 style='color: red;'>ЛР4: Iterator — ПОМИЛКА!</h3>" +
+                              "<p>У базі даних немає жодної станції для тесту.</p>" +
+                              "<p>Зайдіть в Адмін-панель і створіть станцію.</p>",
+                    ContentType = "text/html; charset=utf-8"
+                };
+            }
+            var stationWithPlaylist = await _stationService.GetStationWithPlaylistAsync(anyStation.StationId);
+            _streamingService.StartStreaming(stationWithPlaylist!);
             return new ContentResult
             {
                 Content = "<h3 style='color: green;'>ЛР4: Iterator — УСПІХ!</h3>" +
-                          "<p>Переглянь консоль (Output → Debug)</p>",
+                          $"<p>Тест проведено на реальній станції: <b>{stationWithPlaylist!.StationName}</b></p>" +
+                          "<p>Переглянь консоль (Output → Debug), щоб побачити її плейлист.</p>",
                 ContentType = "text/html; charset=utf-8"
             };
         }
@@ -104,7 +118,6 @@ namespace RadioStationSolution.WebApp.Controllers
             );
         }
 
-        // Метод для тестування Visitor (лр8)
         [HttpGet("visitor")]
         public IActionResult VisitorTest()
         {

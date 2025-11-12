@@ -11,7 +11,7 @@ namespace OnlineRadioStation.Domain
 
         public PlaybackQueueIterator(List<Track> tracks)
         {
-            _tracks = tracks.OrderBy(t => t.QueuePosition).ToList();
+            _tracks = tracks;
         }
 
         public void First() => _currentIndex = 0;

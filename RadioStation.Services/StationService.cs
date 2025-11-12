@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using OnlineRadioStation.Data;
 using OnlineRadioStation.Domain;
-using System; 
+using System;
 using System.Collections.Generic;
-using System.Linq; 
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OnlineRadioStation.Services
@@ -16,7 +16,7 @@ namespace OnlineRadioStation.Services
         public StationService(IStationRepository stationRepository, IUserRepository userRepository)
         {
             _stationRepository = stationRepository;
-            _userRepository = userRepository; 
+            _userRepository = userRepository;
         }
 
         public async Task<IEnumerable<RadioStationEntity>> GetAllStationsAsync()
@@ -36,7 +36,6 @@ namespace OnlineRadioStation.Services
             {
                 throw new Exception("Користувача, який створює станцію, не знайдено.");
             }
-
             var newStation = new RadioStationEntity
             {
                 StationId = Guid.NewGuid(),
@@ -67,11 +66,15 @@ namespace OnlineRadioStation.Services
             var station = await _stationRepository.GetById(id);
             if (station == null)
             {
-
-                return; 
+                return;
             }
-            _stationRepository.DeleteEntity(id); 
+            _stationRepository.DeleteEntity(id);
             await _stationRepository.SaveChangesAsync();
+        }
+
+        public async Task<RadioStationEntity?> GetStationWithPlaylistAsync(Guid id)
+        {
+            return await _stationRepository.GetStationWithPlaylistAsync(id);
         }
     }
 }

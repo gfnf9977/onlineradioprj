@@ -21,11 +21,11 @@ namespace OnlineRadioStation.Services
         }
 
         // ЛР4: Iterator
-        public void StartStreaming(PlaybackQueue queue)
+        public void StartStreaming(RadioStationEntity station)
         {
-            var iterator = queue.CreateIterator();
+            var iterator = station.CreateIterator();
             iterator.First();
-            Console.WriteLine("=== Початок стримінгу (Iterator) ===");
+            Console.WriteLine($"=== Початок стримінгу станції: {station.StationName} ===");
             while (!iterator.IsDone())
             {
                 var track = iterator.Current();
