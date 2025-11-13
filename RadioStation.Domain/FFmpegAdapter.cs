@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace OnlineRadioStation.Domain
@@ -30,13 +31,43 @@ namespace OnlineRadioStation.Domain
                 CreateNoWindow = true
             };
 
-            using var process = Process.Start(psi)!;
+            var outputBuilder = new StringBuilder();
+            var errorBuilder = new StringBuilder();
+
+            using var process = new Process { StartInfo = psi };
+
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null) outputBuilder.AppendLine(e.Data);
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data != null) errorBuilder.AppendLine(e.Data);
+            };
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
             await process.WaitForExitAsync();
 
             if (process.ExitCode != 0)
-                throw new System.Exception(await process.StandardError.ReadToEndAsync());
+            {
+                var errorMessage = errorBuilder.ToString();
+                if (string.IsNullOrEmpty(errorMessage))
+                {
+                    errorMessage = "FFmpeg failed with exit code " + process.ExitCode + ". Output: " + outputBuilder.ToString();
+                }
+                Console.WriteLine("FFMPEG ERROR: " + errorMessage);
+                throw new System.Exception("FFmpeg error: " + errorMessage);
+            }
 
-            return playlist;
+            Console.WriteLine("FFMPEG LOG: " + errorBuilder.ToString());
+
+            var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var webPath = "/" + Path.GetRelativePath(webRootPath, playlist).Replace("\\", "/");
+            return webPath;
         }
     }
 }

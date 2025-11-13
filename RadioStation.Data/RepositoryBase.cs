@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using OnlineRadioStation.Domain;
 
 namespace OnlineRadioStation.Data
 {
@@ -36,7 +37,7 @@ namespace OnlineRadioStation.Data
             _dbSet.Update(entity);
         }
 
-        public async void DeleteEntity(TKey id)
+        public async Task DeleteEntity(TKey id)
         {
             var entity = await GetById(id);
             if (entity != null)

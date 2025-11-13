@@ -12,20 +12,18 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddScoped<StreamingService>();
-
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+builder.Services.AddScoped<ITrackRepository, TrackRepository>();
+builder.Services.AddScoped<IPlaybackQueueRepository, PlaybackQueueRepository>();
+builder.Services.AddScoped<IDjStreamRepository, DjStreamRepository>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
 builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
 
-builder.Services.AddScoped<Normalizer>();
-builder.Services.AddScoped<Encoder>();
-builder.Services.AddScoped<Tagger>();
 builder.Services.AddScoped<IAudioProcessor, AudioProcessingFacade>();
 
 builder.Services.AddScoped<ListeningStatsVisitor>();

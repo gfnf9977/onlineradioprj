@@ -2,20 +2,32 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineRadioStation.Services;
 using System;
 using System.Threading.Tasks;
-using OnlineRadioStation.Domain; 
+using OnlineRadioStation.Domain;
+using OnlineRadioStation.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace RadioStationSolution.WebApp.Controllers
 {
-    // TODO: Додати [Authorize(Roles = "Admin")] для захисту
     public class AdminController : Controller
     {
         private readonly IStationService _stationService;
         private readonly IUserService _userService;
+        private readonly ITrackRepository _trackRepo;
+        private readonly IDjStreamRepository _streamRepo;
+        private readonly IPlaybackQueueRepository _queueRepo;
 
-        public AdminController(IStationService stationService, IUserService userService)
+        public AdminController(
+            IStationService stationService,
+            IUserService userService,
+            ITrackRepository trackRepo,
+            IDjStreamRepository streamRepo,
+            IPlaybackQueueRepository queueRepo)
         {
             _stationService = stationService;
             _userService = userService;
+            _trackRepo = trackRepo;
+            _streamRepo = streamRepo;
+            _queueRepo = queueRepo;
         }
 
         public async Task<IActionResult> ManageStations()
@@ -40,7 +52,6 @@ namespace RadioStationSolution.WebApp.Controllers
                     var users = await _userService.GetAllUsersAsync();
                     var adminId = users.FirstOrDefault()?.UserId ?? Guid.Empty;
                     if (adminId == Guid.Empty) throw new Exception("Не вдалося визначити ID адміністратора.");
-
                     await _stationService.AddStationAsync(stationName, description, adminId);
                     return RedirectToAction(nameof(ManageStations));
                 }
@@ -96,6 +107,32 @@ namespace RadioStationSolution.WebApp.Controllers
                 TempData["Error"] = $"Помилка видалення: {ex.Message}";
             }
             return RedirectToAction(nameof(ManageStations));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ShowStats()
+        {
+            var visitor = new ListeningStatsVisitor();
+            var allTracks = await _trackRepo.GetAll().ToListAsync();
+            var allStreams = await _streamRepo.GetAll().ToListAsync();
+            var allQueueItems = await _queueRepo.GetAll().ToListAsync();
+
+            foreach (var track in allTracks)
+            {
+                track.Accept(visitor);
+            }
+
+            foreach (var stream in allStreams)
+            {
+                stream.Accept(visitor);
+            }
+
+            foreach (var item in allQueueItems)
+            {
+                item.Accept(visitor);
+            }
+
+            return View(visitor);
         }
     }
 }

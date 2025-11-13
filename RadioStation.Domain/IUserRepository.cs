@@ -2,7 +2,7 @@ using OnlineRadioStation.Domain;
 using System;
 using System.Threading.Tasks; 
 
-namespace OnlineRadioStation.Data
+namespace OnlineRadioStation.Domain
 {
     public interface IUserRepository : IRepository<User, Guid>
     {

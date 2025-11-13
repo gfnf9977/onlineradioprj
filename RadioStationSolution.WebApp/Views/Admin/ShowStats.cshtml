@@ -1,0 +1,40 @@
+@* Модель - це сам Visitor, який вже зібрав всі дані *@
+@model OnlineRadioStation.Domain.ListeningStatsVisitor
+
+@{
+    ViewData["Title"] = "Статистика сайту";
+}
+
+<h1>Загальна статистика</h1>
+<p>Звіт, згенерований за допомогою патерну 'Visitor'.</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">Загальна тривалість</div>
+            <div class="card-body">
+                <h1 class="card-title">@Model.TotalListenedMinutes</h1>
+                <p class="card-text">хвилин контенту в базі (всі треки)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Всього треків у плейлистах</div>
+            <div class="card-body">
+                <h1 class="card-title">@Model.TotalTracks</h1>
+                <p class="card-text">всього треків додано до плейлистів</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Проведено DJ-сесій</div>
+            <div class="card-body">
+                <h1 class="card-title">@Model.TotalSessions</h1>
+                <p class="card-text">зареєстровано стрімів від Діджеїв</p>
+            </div>
+        </div>
+    </div>
+</div>

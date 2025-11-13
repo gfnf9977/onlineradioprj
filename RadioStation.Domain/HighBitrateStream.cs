@@ -1,8 +1,22 @@
+using System.Threading.Tasks;
+
 namespace OnlineRadioStation.Domain
 {
     public class HighBitrateStream : IAudioStream
     {
-        public int GetBitrate() => 224;
-        public string StreamTrack(string title) => $"[224kb/s] Стрім: {title}";
+        private readonly IAudioConverter _converter;
+        private const int Bitrate = 224;
+
+        public HighBitrateStream(IAudioConverter converter)
+        {
+            _converter = converter;
+        }
+
+        public int GetBitrate() => Bitrate;
+
+        public async Task<string> CreateStreamAsync(string inputAudioPath)
+        {
+            return await _converter.ConvertToHlsAsync(inputAudioPath, Bitrate);
+        }
     }
 }

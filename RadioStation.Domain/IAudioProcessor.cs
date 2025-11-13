@@ -1,7 +1,15 @@
+using System;
+using System.Threading.Tasks;
+
 namespace OnlineRadioStation.Domain
 {
     public interface IAudioProcessor
     {
-        string Process(string inputPath);
+        Task ProcessNewTrackAsync(
+            string tempFilePath,
+            string title,
+            Guid stationId,
+            Guid djId,
+            int bitrate);
     }
 }

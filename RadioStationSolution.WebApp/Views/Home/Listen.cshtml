@@ -1,23 +1,24 @@
-@* Вказуємо, що наша модель - це реальна сутність RadioStationEntity *@
 @model OnlineRadioStation.Domain.RadioStationEntity
 
 @{
     ViewData["Title"] = $"Слухати: {Model.StationName}";
-
-    // === ОСЬ ВІН, "ОЖИВЛЕНИЙ" ІТЕРАТОР! ===
-    // Model - це наш 'RadioStationEntity', який реалізує 'IStationPlaylist'.
-    // Ми викликаємо його метод CreateIterator(),
-    // який повертає ітератор по РЕАЛЬНИХ треках з БД.
     var iterator = Model.CreateIterator();
     iterator.First();
+
+    // --- Отримуємо URL першого треку для плеєра ---
+    string trackToPlayUrl = null;
+    if (!iterator.IsDone())
+    {
+        // Беремо HlsUrl з першого треку в ітераторі
+        trackToPlayUrl = iterator.Current()?.HlsUrl;
+    }
 }
 
 <h1>Зараз грає: @Model.StationName</h1>
 <p>@Model.Description</p>
 
+<video id="audioPlayer" controls style="width: 100%; max-width: 600px; background: #000; border-radius: 5px;"></video>
 <hr />
-
-@* Перевіряємо, чи ітератор не порожній *@
 @if (iterator.IsDone())
 {
     <div class="alert alert-info">
@@ -33,24 +34,62 @@ else
                 <th>#</th>
                 <th>Назва треку</th>
                 <th>Тривалість</th>
+                <th>(URL стріму)</th>
             </tr>
         </thead>
         <tbody>
-            @{ int position = 1; }
+            @{ 
+                // Скидаємо ітератор, щоб знову почати з першого
+                iterator.First();
+                int position = 1; 
+            }
             @while (!iterator.IsDone())
             {
-                // Отримуємо поточний трек з ітератора
                 var track = iterator.Current();
-                
                 <tr>
                     <td>@(position++)</td>
                     <td>@track.Title</td>
                     <td>@track.Duration.ToString("g")</td>
+                    <td><small>@track.HlsUrl</small></td> @* Показуємо URL для відладки *@
                 </tr>
-
-                // Переходимо до наступного треку
                 iterator.Next();
             }
         </tbody>
     </table>
+}
+
+@* === ДОДАЄМО JAVASCRIPT ДЛЯ HLS.JS === *@
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        
+        // Отримуємо URL першого треку з C#
+        var streamUrl = @Html.Raw(Json.Serialize(trackToPlayUrl));
+
+        if (streamUrl && streamUrl !== "") { // Якщо URL існує
+            var audio = document.getElementById('audioPlayer');
+            
+            if (Hls.isSupported()) {
+                // Для Chrome, Firefox, Edge
+                var hls = new Hls();
+                hls.loadSource(streamUrl);
+                hls.attachMedia(audio);
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    console.log('HLS.js: Маніфест завантажено, починаю відтворення.');
+                    audio.play();
+                });
+            } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+                // Для Safari, iOS (нативна підтримка)
+                audio.src = streamUrl;
+                audio.addEventListener('loadedmetadata', function () {
+                    audio.play();
+                });
+            }
+        } else {
+            console.log('Немає треків для відтворення.');
+            // Ховаємо плеєр, якщо грати нічого
+            document.getElementById('audioPlayer').style.display = 'none';
+        }
+    });
+</script>
 }

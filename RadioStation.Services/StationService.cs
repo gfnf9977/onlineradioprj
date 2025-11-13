@@ -68,7 +68,7 @@ namespace OnlineRadioStation.Services
             {
                 return;
             }
-            _stationRepository.DeleteEntity(id);
+            await _stationRepository.DeleteEntity(id);
             await _stationRepository.SaveChangesAsync();
         }
 
