@@ -5,7 +5,6 @@
     var iterator = Model.CreateIterator();
     iterator.First();
 
-    // --- Отримуємо URL першого треку для плеєра ---
     string trackToPlayUrl = null;
     if (!iterator.IsDone())
     {
@@ -63,7 +62,6 @@ else
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         
-        // Отримуємо URL першого треку з C#
         var streamUrl = @Html.Raw(Json.Serialize(trackToPlayUrl));
 
         if (streamUrl && streamUrl !== "") { // Якщо URL існує
@@ -87,7 +85,6 @@ else
             }
         } else {
             console.log('Немає треків для відтворення.');
-            // Ховаємо плеєр, якщо грати нічого
             document.getElementById('audioPlayer').style.display = 'none';
         }
     });
