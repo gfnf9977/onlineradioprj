@@ -1,36 +1,162 @@
-﻿@{
-    ViewData["Title"] = "Вхід";
+@model IEnumerable<OnlineRadioStation.Domain.RadioStationEntity>
+
+@{
+    ViewData["Title"] = "Головна";
 }
 
+@* === КАСТОМНІ СТИЛІ (Можна винести в site.css, але хай будуть тут для наочності) === *@
 <style>
-    .login-container { max-width: 400px; margin: 50px auto; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background-color: #ffffff; }
-    .login-container h1 { text-align: center; margin-bottom: 25px; color: #333; }
-    .form-group { margin-bottom: 20px; }
-    .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; } /* Додано box-sizing */
-    .btn-login { width: 100%; padding: 12px; border: none; border-radius: 5px; background-color: #007bff; color: white; font-size: 16px; cursor: pointer; transition: background-color 0.2s; }
-    .btn-login:hover { background-color: #0056b3; }
-    .register-link { display: block; text-align: center; margin-top: 15px; }
-    .error-message { color: red; margin-bottom: 15px; text-align: center; }
-</style>
-
-<div class="login-container">
-    <h1>Авторизація</h1>
-
-    @if (ViewBag.Error != null)
-    {
-        <p class="error-message">@ViewBag.Error</p>
+    /* Градієнтний фон для головного банера */
+    .hero-section {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
 
-    <form method="post" asp-action="Index"> @* Вказуємо метод POST та дію Index *@
-        <div class="form-group">
-            <label for="username">Ім'я користувача</label>
-            <input type="text" id="username" name="username" class="form-control" placeholder="Введіть логін" required> @* Додано name="username" та required *@
+    /* Ефект для карток при наведенні */
+    .station-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        overflow: hidden;
+    }
+    .station-card:hover {
+        transform: translateY(-5px); /* Піднімає картку вгору */
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+    }
+
+    /* Імітація обкладинки альбому/станції (кольоровий квадрат) */
+    .station-cover {
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+        color: white;
+        font-size: 3rem;
+    }
+    /* Різні градієнти для різноманіття (через nth-child) */
+    .col:nth-child(2n) .station-cover { background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%); }
+    .col:nth-child(3n) .station-cover { background: linear-gradient(to top, #a8edea 0%, #fed6e3 100%); }
+    .col:nth-child(4n) .station-cover { background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%); }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        color: #0d6efd;
+        margin-bottom: 1rem;
+    }
+</style>
+
+@* === HERO SECTION (Банер) === *@
+<div class="p-5 mb-5 rounded-3 hero-section text-center">
+    <div class="container-fluid py-3">
+        <div class="mb-3">
+            <i class="bi bi-boombox-fill" style="font-size: 4rem;"></i>
         </div>
-        <div class="form-group">
-            <label for="password">Пароль</label>
-            <input type="password" id="password" name="password" class="form-control" placeholder="Введіть пароль" required> @* Додано name="password" та required *@
+        <h1 class="display-4 fw-bold">Твій ритм. Твоя хвиля.</h1>
+        <p class="col-md-8 fs-5 mx-auto mt-3">
+            Слухай найкращі хіти, дізнавайся новини та створюй власний настрій разом з 
+            <strong>Online Radio Station</strong>. Якісний звук без перешкод.
+        </p>
+        
+        <div class="d-flex justify-content-center gap-3 mt-5">
+            <a class="btn btn-light btn-lg px-5 fw-bold text-primary" asp-controller="Home" asp-action="Login">
+                <i class="bi bi-box-arrow-in-right"></i> Увійти
+            </a>
+            <a class="btn btn-outline-light btn-lg px-5" asp-controller="Home" asp-action="Register">
+                Реєстрація
+            </a>
         </div>
-        <button type="submit" class="btn-login">Увійти</button>
-    </form>
-    <a class="register-link" href="@Url.Action("Register", "Home")">Немає акаунту? Зареєструватися</a>
+    </div>
+</div>
+
+@* === СЕКЦІЯ "ВІТРИНА СТАНЦІЙ" === *@
+<div class="container mb-5">
+    <div class="d-flex align-items-center mb-4 border-bottom pb-2">
+        <i class="bi bi-broadcast text-primary me-2 fs-3"></i>
+        <h2 class="mb-0">В ефірі зараз</h2>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+            @foreach (var station in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm station-card">
+                        <div class="station-cover">
+                            <i class="bi bi-music-note-beamed"></i>
+                        </div>
+                        
+                        <div class="card-body text-center">
+                            <h5 class="card-title fw-bold">@station.StationName</h5>
+                            <p class="card-text text-muted small">
+                                @if(!string.IsNullOrEmpty(station.Description))
+                                {
+                                    @station.Description
+                                }
+                                else
+                                {
+                                    <span>Найкраща музика для вас...</span>
+                                }
+                            </p>
+                        </div>
+                        
+                        <div class="card-footer bg-white border-top-0 text-center pb-4">
+                            <a asp-controller="Home" asp-action="Login" 
+                               class="btn btn-primary rounded-pill px-4 w-75 shadow-sm">
+                                <i class="bi bi-play-circle-fill me-1"></i> Слухати
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-mic-mute fs-1"></i>
+            <p class="mt-2">Наразі немає активних станцій. Завітайте пізніше!</p>
+        </div>
+    }
+</div>
+
+@* === ПЕРЕВАГИ (Featurettes) === *@
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Чому обирають нас?</h2>
+            <p class="text-muted">Ми дбаємо про якість звуку та зручність використання.</p>
+        </div>
+
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <div class="feature-icon bg-white shadow-sm rounded-circle d-inline-flex p-3 align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="bi bi-file-earmark-music"></i>
+                </div>
+                <h4 class="mt-3">Hi-Res Audio</h4>
+                <p class="text-muted px-3">
+                    Підтримка бітрейту до 224 kb/s. Насолоджуйтесь кожною нотою завдяки HLS-трансляції.
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-icon bg-white shadow-sm rounded-circle d-inline-flex p-3 align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="bi bi-globe"></i>
+                </div>
+                <h4 class="mt-3">Доступність</h4>
+                <p class="text-muted px-3">
+                    Слухайте улюблене радіо на будь-якому пристрої: ПК, планшет або смартфон.
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-icon bg-white shadow-sm rounded-circle d-inline-flex p-3 align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h4 class="mt-3">Спільнота</h4>
+                <p class="text-muted px-3">
+                    Діджеї створюють контент для вас. Реєструйтесь, щоб отримати доступ до всіх функцій.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>

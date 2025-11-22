@@ -21,10 +21,10 @@ builder.Services.AddScoped<IDjStreamRepository, DjStreamRepository>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
-builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
+//builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
+//builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
 
-builder.Services.AddScoped<IAudioProcessor, AudioProcessingFacade>();
+//builder.Services.AddScoped<IAudioProcessor, AudioProcessingFacade>();
 
 builder.Services.AddScoped<ListeningStatsVisitor>();
 

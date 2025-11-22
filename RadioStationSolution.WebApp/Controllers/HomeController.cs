@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineRadioStation.Services;
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace RadioStationSolution.WebApp.Controllers
@@ -18,10 +17,20 @@ namespace RadioStationSolution.WebApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index() { return View(); }
+        public async Task<IActionResult> Index()
+        {
+            var stations = await _stationService.GetAllStationsAsync();
+            return View(stations);
+        }
+
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Index(string username, string password)
+        public async Task<IActionResult> Login(string username, string password)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -77,7 +86,10 @@ namespace RadioStationSolution.WebApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult Register() { return View(); }
+        public IActionResult Register()
+        {
+            return View();
+        }
 
         [HttpPost]
         public async Task<IActionResult> Register(string username, string email, string password)
@@ -90,7 +102,7 @@ namespace RadioStationSolution.WebApp.Controllers
             try
             {
                 await _userService.CreateUserAsync(username, password, email);
-                return RedirectToAction("Index");
+                return RedirectToAction("Login");
             }
             catch (Exception ex)
             {
@@ -99,6 +111,9 @@ namespace RadioStationSolution.WebApp.Controllers
             }
         }
 
-        public IActionResult Privacy() { return View(); }
+        public IActionResult Privacy()
+        {
+            return View();
+        }
     }
 }

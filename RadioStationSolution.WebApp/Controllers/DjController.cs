@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using OnlineRadioStation.Domain;
 using OnlineRadioStation.Services;
+using OnlineRadioStation.Data;
 using System;
 using System.IO;
 using System.Linq;
@@ -11,18 +12,21 @@ namespace RadioStationSolution.WebApp.Controllers
 {
     public class DjController : Controller
     {
-        private readonly IAudioProcessor _audioProcessor;
         private readonly IStationService _stationService;
         private readonly IUserService _userService;
+        private readonly ITrackRepository _trackRepo;
+        private readonly IPlaybackQueueRepository _queueRepo;
 
         public DjController(
-            IAudioProcessor audioProcessor,
             IStationService stationService,
-            IUserService userService)
+            IUserService userService,
+            ITrackRepository trackRepo,
+            IPlaybackQueueRepository queueRepo)
         {
-            _audioProcessor = audioProcessor;
             _stationService = stationService;
             _userService = userService;
+            _trackRepo = trackRepo;
+            _queueRepo = queueRepo;
         }
 
         [HttpGet]
@@ -40,22 +44,27 @@ namespace RadioStationSolution.WebApp.Controllers
             if (trackFile == null || trackFile.Length == 0)
             {
                 ModelState.AddModelError("trackFile", "Будь ласка, оберіть MP3-файл.");
+                var stations = await _stationService.GetAllStationsAsync();
+                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
+                return View();
             }
             if (string.IsNullOrEmpty(title))
             {
                 ModelState.AddModelError("title", "Будь ласка, введіть назву треку.");
+                var stations = await _stationService.GetAllStationsAsync();
+                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
+                return View();
             }
             if (stationId == Guid.Empty)
             {
                 ModelState.AddModelError("stationId", "Будь ласка, оберіть станцію.");
+                var stations = await _stationService.GetAllStationsAsync();
+                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
+                return View();
             }
             if (bitrate == 0)
             {
                 ModelState.AddModelError("bitrate", "Будь ласка, оберіть якість (бітрейт).");
-            }
-
-            if (!ModelState.IsValid)
-            {
                 var stations = await _stationService.GetAllStationsAsync();
                 ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
                 return View();
@@ -71,12 +80,24 @@ namespace RadioStationSolution.WebApp.Controllers
             var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault();
             if (djUser == null)
             {
+                ModelState.AddModelError("", "User not found");
+                var stations = await _stationService.GetAllStationsAsync();
+                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
                 return View();
             }
 
+            IAudioConverter adapter = new FFmpegAdapter();
+            StreamFactory factory = new BitrateStreamFactory(adapter);
+            IAudioProcessor manualFacade = new AudioProcessingFacade(
+                adapter,
+                _trackRepo,
+                _queueRepo,
+                factory
+            );
+
             try
             {
-                await _audioProcessor.ProcessNewTrackAsync(
+                await manualFacade.ProcessNewTrackAsync(
                     tempFilePath: tempFilePath,
                     title: title,
                     stationId: stationId,
@@ -86,7 +107,7 @@ namespace RadioStationSolution.WebApp.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ПОМИЛКА ФАСАДУ: {ex.Message}");
+                Console.WriteLine($"ПОМИЛКА: {ex.Message}");
             }
             finally
             {

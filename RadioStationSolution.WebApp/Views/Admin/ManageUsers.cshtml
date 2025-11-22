@@ -1,0 +1,62 @@
+@model IEnumerable<OnlineRadioStation.Domain.User>
+@{
+    ViewData["Title"] = "Керування користувачами";
+}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Керування користувачами</h1>
+        <span class="badge bg-primary fs-6">Всього користувачів: @Model.Count()</span>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Логін</th>
+                        <th>Email</th>
+                        <th>Роль</th>
+                        <th>Дата реєстрації</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold">@user.Username</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @if(user.Role.ToLower() == "admin")
+                                {
+                                    <span class="badge bg-danger">Admin</span>
+                                }
+                                else if (user.Role.ToLower() == "dj")
+                                {
+                                    <span class="badge bg-warning text-dark">DJ</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">User</span>
+                                }
+                            </td>
+                            <td>@user.CreatedAt.ToString("g")</td>
+                            <td class="text-end">
+                                <a asp-action="EditUser" asp-route-id="@user.UserId" class="btn btn-sm btn-outline-primary me-1" title="Редагувати">
+                                    <i class="bi bi-pencil"></i> Ред.
+                                </a>
+                                <form asp-action="DeleteUser" asp-route-id="@user.UserId" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            title="Видалити"
+                                            onclick="return confirm('Ви впевнені, що хочете видалити користувача @user.Username?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

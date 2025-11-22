@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OnlineRadioStation.Data;
 using OnlineRadioStation.Domain;
-using System; 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -29,36 +29,49 @@ namespace OnlineRadioStation.Services
             return null;
         }
 
+        public async Task<User> CreateUserAsync(string username, string password, string email)
+        {
+            var existingUserByUsername = await _userRepository.GetUserByUsernameAsync(username);
+            if (existingUserByUsername != null)
+            {
+                throw new Exception("Користувач з таким ім'ям вже існує.");
+            }
 
-public async Task<User> CreateUserAsync(string username, string password, string email)
-{
+            var newUser = new User
+            {
+                UserId = Guid.NewGuid(),
+                Username = username,
+                PasswordHash = password,
+                Email = email,
+                Role = "User",
+                CreatedAt = DateTime.UtcNow
+            };
 
-    var existingUserByUsername = await _userRepository.GetUserByUsernameAsync(username);
-    if (existingUserByUsername != null)
-    {
-        throw new Exception("Користувач з таким ім'ям вже існує.");
-    }
+            _userRepository.AddEntity(newUser);
+            await _userRepository.SaveChangesAsync();
+            return newUser;
+        }
 
-    // TODO: Add GetUserByEmailAsync method to IUserRepository and UserRepository
-    // var existingUserByEmail = await _userRepository.GetUserByEmailAsync(email);
-    // if (existingUserByEmail != null)
-    // {
-    //     throw new Exception("Користувач з таким email вже існує.");
-    // }
+        public async Task<User?> GetUserByIdAsync(Guid id)
+        {
+            return await _userRepository.GetById(id);
+        }
 
-    var newUser = new User
-    {
-        UserId = Guid.NewGuid(),
-        Username = username,
-        PasswordHash = password, 
-        Email = email,
-        Role = "User", 
-        CreatedAt = DateTime.UtcNow
-    };
+        public async Task UpdateUserRoleAsync(Guid id, string newRole)
+        {
+            var user = await _userRepository.GetById(id);
+            if (user != null)
+            {
+                user.Role = newRole;
+                _userRepository.UpdateEntity(user);
+                await _userRepository.SaveChangesAsync();
+            }
+        }
 
-    _userRepository.AddEntity(newUser);
-    await _userRepository.SaveChangesAsync();
-    return newUser;
-}
+        public async Task DeleteUserAsync(Guid id)
+        {
+            await _userRepository.DeleteEntity(id);
+            await _userRepository.SaveChangesAsync();
+        }
     }
 }
