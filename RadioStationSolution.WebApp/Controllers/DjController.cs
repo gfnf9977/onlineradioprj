@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using OnlineRadioStation.Domain;
 using OnlineRadioStation.Services;
 using OnlineRadioStation.Data;
@@ -32,92 +31,76 @@ namespace RadioStationSolution.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Upload()
         {
-            var stations = await _stationService.GetAllStationsAsync();
-            ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
+            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+
+            if (djUser == null)
+                return Content("У системі немає Діджеїв.");
+
+            if (djUser.AssignedStationId == null)
+                return Content("Ваш акаунт ще не прив'язаний до жодної радіостанції. Зверніться до Адміністратора.");
+
+            var station = await _stationService.GetStationByIdAsync(djUser.AssignedStationId.Value);
+            ViewBag.StationName = station?.StationName ?? "Невідома станція";
+
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Upload(IFormFile trackFile, string title, Guid stationId, int bitrate)
+        public async Task<IActionResult> Upload(IFormFile trackFile, string title)
         {
             if (trackFile == null || trackFile.Length == 0)
-            {
                 ModelState.AddModelError("trackFile", "Будь ласка, оберіть MP3-файл.");
-                var stations = await _stationService.GetAllStationsAsync();
-                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
-                return View();
-            }
+
             if (string.IsNullOrEmpty(title))
-            {
                 ModelState.AddModelError("title", "Будь ласка, введіть назву треку.");
-                var stations = await _stationService.GetAllStationsAsync();
-                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
-                return View();
-            }
-            if (stationId == Guid.Empty)
+
+            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            if (djUser == null || djUser.AssignedStationId == null)
+                return Content("Помилка доступу.");
+
+            if (!ModelState.IsValid)
             {
-                ModelState.AddModelError("stationId", "Будь ласка, оберіть станцію.");
-                var stations = await _stationService.GetAllStationsAsync();
-                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
-                return View();
-            }
-            if (bitrate == 0)
-            {
-                ModelState.AddModelError("bitrate", "Будь ласка, оберіть якість (бітрейт).");
-                var stations = await _stationService.GetAllStationsAsync();
-                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
+                var station = await _stationService.GetStationByIdAsync(djUser.AssignedStationId.Value);
+                ViewBag.StationName = station?.StationName ?? "Невідома станція";
                 return View();
             }
 
             var tempFileName = $"{Guid.NewGuid()}{Path.GetExtension(trackFile.FileName)}";
             var tempFilePath = Path.Combine(Path.GetTempPath(), tempFileName);
+
             await using (var stream = new FileStream(tempFilePath, FileMode.Create))
             {
                 await trackFile.CopyToAsync(stream);
             }
 
-            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault();
-            if (djUser == null)
-            {
-                ModelState.AddModelError("", "User not found");
-                var stations = await _stationService.GetAllStationsAsync();
-                ViewBag.Stations = new SelectList(stations, "StationId", "StationName");
-                return View();
-            }
-
             IAudioConverter adapter = new FFmpegAdapter();
             StreamFactory factory = new BitrateStreamFactory(adapter);
-            IAudioProcessor manualFacade = new AudioProcessingFacade(
-                adapter,
-                _trackRepo,
-                _queueRepo,
-                factory
-            );
+            IAudioProcessor facade = new AudioProcessingFacade(adapter, _trackRepo, _queueRepo, factory);
 
             try
             {
-                await manualFacade.ProcessNewTrackAsync(
+                await facade.ProcessNewTrackAsync(
                     tempFilePath: tempFilePath,
                     title: title,
-                    stationId: stationId,
-                    djId: djUser.UserId,
-                    bitrate: bitrate
+                    stationId: djUser.AssignedStationId.Value,
+                    djId: djUser.UserId
                 );
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ПОМИЛКА: {ex.Message}");
+                ModelState.AddModelError("", $"Помилка обробки треку: {ex.Message}");
+                var station = await _stationService.GetStationByIdAsync(djUser.AssignedStationId.Value);
+                ViewBag.StationName = station?.StationName ?? "Невідома станція";
+                return View();
             }
             finally
             {
                 if (System.IO.File.Exists(tempFilePath))
-                {
                     System.IO.File.Delete(tempFilePath);
-                }
             }
 
-            return RedirectToAction("Listen", "Home", new { id = stationId });
+            return RedirectToAction("Listen", "Home", new { id = djUser.AssignedStationId.Value });
         }
     }
 }

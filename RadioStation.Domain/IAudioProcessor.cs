@@ -5,11 +5,6 @@ namespace OnlineRadioStation.Domain
 {
     public interface IAudioProcessor
     {
-        Task ProcessNewTrackAsync(
-            string tempFilePath,
-            string title,
-            Guid stationId,
-            Guid djId,
-            int bitrate);
+        Task ProcessNewTrackAsync(string tempFilePath, string title, Guid stationId, Guid djId);
     }
 }

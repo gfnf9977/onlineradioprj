@@ -1,4 +1,5 @@
 using OnlineRadioStation.Domain;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -12,5 +13,6 @@ namespace OnlineRadioStation.Services
         Task<User?> GetUserByIdAsync(Guid id); 
         Task UpdateUserRoleAsync(Guid id, string newRole); 
         Task DeleteUserAsync(Guid id); 
+        Task UpdateUserRoleAndStationAsync(Guid id, string newRole, Guid? stationId);
     }
 }

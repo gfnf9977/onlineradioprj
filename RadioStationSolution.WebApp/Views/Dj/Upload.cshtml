@@ -1,46 +1,33 @@
 @{
     ViewData["Title"] = "Завантажити трек";
-    var stationsList = ViewBag.Stations as SelectList;
 }
-
 <h1>Завантажити новий трек</h1>
-<p>Цей файл буде оброблений (конвертований) і доданий до плейлиста.</p>
+<h4 class="text-muted mb-4">
+    Станція: <span class="text-primary fw-bold">@ViewBag.StationName</span>
+</h4>
+<p class="text-secondary">
+    Цей файл буде оброблений (конвертований) і доданий до плейлиста вибраної станції.
+</p>
 <hr />
-
 <div class="row">
     <div class="col-md-6">
         <form asp-controller="Dj" asp-action="Upload" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
-
             <div class="mb-3">
                 <label for="trackFile" class="form-label"><b>1. Оберіть MP3-файл:</b></label>
                 <input type="file" name="trackFile" class="form-control" accept=".mp3" required />
             </div>
-
             <div class="mb-3">
                 <label for="title" class="form-label"><b>2. Введіть назву треку:</b></label>
-                <input type="text" name="title" class="form-control" placeholder="Наприклад, 'Metallica - Fuel'" required />
+                <input type="text" name="title" class="form-control"
+                       placeholder="Наприклад, 'Metallica - Fuel'" required />
             </div>
-
-            <div class="mb-3">
-                <label for="stationId" class="form-label"><b>3. Оберіть станцію:</b></label>
-                <select name="stationId" class="form-select" asp-items="stationsList" required>
-                    <option value="">-- Куди додати трек? --</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label for="bitrate" class="form-label"><b>4. Оберіть якість (бітрейт):</b></label>
-                <select name="bitrate" class="form-select" required>
-                    <option value="">-- Якість стріму --</option>
-                    <option value="64">Низька (64 kb/s)</option>
-                    <option value="128">Стандарт (128 kb/s)</option>
-                    <option value="224">Висока (224 kb/s)</option>
-                </select>
-            </div>
-
             <hr />
-            <button type="submit" class="btn btn-primary">Завантажити та обробити</button>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    Завантажити та обробити
+                </button>
+            </div>
         </form>
     </div>
 </div>

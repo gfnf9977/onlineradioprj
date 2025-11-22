@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-
 namespace OnlineRadioStation.Services
 {
     public class UserService : IUserService
@@ -74,6 +73,19 @@ namespace OnlineRadioStation.Services
             if (user != null)
             {
                 user.Role = newRole;
+                _userRepository.UpdateEntity(user);
+                await _userRepository.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdateUserRoleAndStationAsync(Guid id, string newRole, Guid? stationId)
+        {
+            var user = await _userRepository.GetById(id);
+            if (user != null)
+            {
+                user.Role = newRole;
+                user.AssignedStationId = stationId;
+
                 _userRepository.UpdateEntity(user);
                 await _userRepository.SaveChangesAsync();
             }

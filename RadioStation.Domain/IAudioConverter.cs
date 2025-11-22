@@ -4,6 +4,8 @@ namespace OnlineRadioStation.Domain
 {
     public interface IAudioConverter
     {
-        Task<string> ConvertToHlsAsync(string inputPath, int bitrate);
+        Task<string> ConvertToHlsAsync(string inputPath, int bitrate, string subfolder);
+        Task<TimeSpan> GetTrackDurationAsync(string inputPath);
+        
     }
 }

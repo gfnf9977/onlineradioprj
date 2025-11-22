@@ -4,7 +4,8 @@ namespace OnlineRadioStation.Domain
 {
     public interface IAudioStream
     {
-        Task<string> CreateStreamAsync(string inputAudioPath);
+
+        Task<string> CreateStreamAsync(string inputAudioPath, string subfolder);
         int GetBitrate();
     }
 }

@@ -14,9 +14,9 @@ namespace OnlineRadioStation.Domain
 
         public int GetBitrate() => Bitrate;
 
-        public async Task<string> CreateStreamAsync(string inputAudioPath)
+        public async Task<string> CreateStreamAsync(string inputAudioPath, string subfolder)
         {
-            return await _converter.ConvertToHlsAsync(inputAudioPath, Bitrate);
+            return await _converter.ConvertToHlsAsync(inputAudioPath, Bitrate, subfolder);
         }
     }
 }

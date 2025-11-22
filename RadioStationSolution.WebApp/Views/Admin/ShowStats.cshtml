@@ -1,4 +1,3 @@
-@* Модель - це сам Visitor, який вже зібрав всі дані *@
 @model OnlineRadioStation.Domain.ListeningStatsVisitor
 
 @{
@@ -37,4 +36,32 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="mt-5">
+    <h3>Обслуговування системи</h3>
+    <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+        <span>Видалення фізичних файлів стрімів, запис про які відсутній у базі даних.</span>
+        
+        <form asp-action="CleanOrphanFiles" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-warning">
+                Очистити файлове сміття
+            </button>
+        </form>
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success mt-3">
+            @TempData["Message"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mt-3">
+            @TempData["Error"]
+        </div>
+    }
 </div>

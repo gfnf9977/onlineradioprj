@@ -1,28 +1,31 @@
 @model OnlineRadioStation.Domain.User
-
 @{
     ViewData["Title"] = "Редагування користувача";
     var rolesList = ViewBag.Roles as SelectList;
+    var stationsList = ViewBag.Stations as SelectList;
 }
-
 <div class="container" style="max-width: 500px;">
     <h2>Редагування користувача</h2>
     <hr />
-    
+
     <div class="card shadow-sm">
         <div class="card-body">
             <h4 class="card-title text-primary">@Model.Username</h4>
             <p class="text-muted">Email: @Model.Email</p>
-
             <form asp-action="EditUser" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="userId" value="@Model.UserId" />
-
                 <div class="mb-3">
                     <label for="role" class="form-label fw-bold">Оберіть нову роль:</label>
                     <select name="role" class="form-select" asp-items="rolesList"></select>
                 </div>
-
+                <div class="mb-3">
+                    <label for="assignedStationId" class="form-label fw-bold">Прив'язати до станції (для DJ):</label>
+                    <select name="assignedStationId" class="form-select" asp-items="stationsList">
+                        <option value="">-- Не призначено --</option>
+                    </select>
+                    <div class="form-text">Оберіть станцію, якою керуватиме цей Діджей.</div>
+                </div>
                 <div class="d-flex justify-content-between mt-4">
                     <a asp-action="ManageUsers" class="btn btn-secondary">Скасувати</a>
                     <button type="submit" class="btn btn-success">Зберегти зміни</button>

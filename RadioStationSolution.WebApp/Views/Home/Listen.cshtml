@@ -1,23 +1,26 @@
 @model OnlineRadioStation.Domain.RadioStationEntity
+@using System.Collections.Generic
 
 @{
     ViewData["Title"] = $"Слухати: {Model.StationName}";
+    
+    // Створюємо ітератор
     var iterator = Model.CreateIterator();
     iterator.First();
 
-    string trackToPlayUrl = null;
-    if (!iterator.IsDone())
-    {
-        // Беремо HlsUrl з першого треку в ітераторі
-        trackToPlayUrl = iterator.Current()?.HlsUrl;
-    }
+    // Створюємо список для JavaScript, куди покладемо всі URL
+    var playlistForJs = new List<object>();
 }
 
 <h1>Зараз грає: @Model.StationName</h1>
 <p>@Model.Description</p>
 
-<video id="audioPlayer" controls style="width: 100%; max-width: 600px; background: #000; border-radius: 5px;"></video>
+<video id="audioPlayer" controls autoplay style="width: 100%; max-width: 600px; background: #000; border-radius: 5px;"></video>
+<div class="mt-2">
+    <strong>Грає зараз: </strong> <span id="currentTrackName" class="text-primary">...</span>
+</div>
 <hr />
+
 @if (iterator.IsDone())
 {
     <div class="alert alert-info">
@@ -27,29 +30,37 @@
 else
 {
     <h3>Плейлист станції:</h3>
-    <table class="table table-striped">
+    <table class="table table-striped table-hover">
         <thead>
             <tr>
                 <th>#</th>
                 <th>Назва треку</th>
                 <th>Тривалість</th>
-                <th>(URL стріму)</th>
+                <th>Статус</th>
             </tr>
         </thead>
         <tbody>
-            @{ 
-                // Скидаємо ітератор, щоб знову почати з першого
-                iterator.First();
-                int position = 1; 
-            }
+            @{ int position = 1; }
             @while (!iterator.IsDone())
             {
                 var track = iterator.Current();
-                <tr>
+                
+                // Додаємо дані про трек у список для JS
+                // Важливо: перевіряємо HlsUrl на null
+                if (!string.IsNullOrEmpty(track.HlsUrl))
+                {
+                    playlistForJs.Add(new { 
+                        title = track.Title, 
+                        url = track.HlsUrl,
+                        id = position // ID рядка таблиці для підсвітки
+                    });
+                }
+
+                <tr id="row-@position">
                     <td>@(position++)</td>
                     <td>@track.Title</td>
-                    <td>@track.Duration.ToString("g")</td>
-                    <td><small>@track.HlsUrl</small></td> @* Показуємо URL для відладки *@
+                    <td>@track.Duration.ToString(@"mm\:ss")</td>
+                    <td class="status-cell text-muted">В черзі</td>
                 </tr>
                 iterator.Next();
             }
@@ -57,35 +68,88 @@ else
     </table>
 }
 
-@* === ДОДАЄМО JAVASCRIPT ДЛЯ HLS.JS === *@
 @section Scripts {
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         
-        var streamUrl = @Html.Raw(Json.Serialize(trackToPlayUrl));
+        // 1. Отримуємо ВЕСЬ плейлист з C# у вигляді JSON-масиву
+        var playlist = @Html.Raw(Json.Serialize(playlistForJs));
+        
+        var audio = document.getElementById('audioPlayer');
+        var trackLabel = document.getElementById('currentTrackName');
+        var currentIndex = 0;
+        var hls = null;
 
-        if (streamUrl && streamUrl !== "") { // Якщо URL існує
-            var audio = document.getElementById('audioPlayer');
-            
+        // Функція для завантаження треку за індексом
+        function loadTrack(index) {
+            // Перевірка на кінець плейлиста
+            if (index >= playlist.length) {
+                console.log("Плейлист закінчився.");
+                trackLabel.innerText = "Ефір завершено";
+                return;
+            }
+
+            currentIndex = index;
+            var track = playlist[index];
+            var streamUrl = track.url;
+
+            // Оновлюємо UI (назву та таблицю)
+            trackLabel.innerText = track.title;
+            updateTableUI(track.id);
+
+            // Логіка HLS.js або нативного відтворення
             if (Hls.isSupported()) {
-                // Для Chrome, Firefox, Edge
-                var hls = new Hls();
+                if (hls) {
+                    hls.destroy(); // Знищуємо попередній екземпляр HLS, щоб не було конфліктів
+                }
+                hls = new Hls();
                 hls.loadSource(streamUrl);
                 hls.attachMedia(audio);
                 hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                    console.log('HLS.js: Маніфест завантажено, починаю відтворення.');
-                    audio.play();
+                    audio.play().catch(e => console.log("Autoplay blocked:", e));
                 });
             } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
-                // Для Safari, iOS (нативна підтримка)
                 audio.src = streamUrl;
                 audio.addEventListener('loadedmetadata', function () {
                     audio.play();
                 });
             }
+        }
+
+        // Функція для підсвітки активного треку в таблиці
+        function updateTableUI(rowId) {
+            // Скидаємо стилі у всіх рядків
+            document.querySelectorAll('tr').forEach(row => {
+                row.classList.remove('table-active');
+                var cell = row.querySelector('.status-cell');
+                if(cell) cell.innerText = "";
+            });
+
+            // Підсвічуємо поточний
+            var activeRow = document.getElementById('row-' + rowId);
+            if (activeRow) {
+                activeRow.classList.add('table-active');
+                var cell = activeRow.querySelector('.status-cell');
+                if(cell) {
+                    cell.innerText = "🔊 Грає";
+                    cell.classList.remove('text-muted');
+                    cell.classList.add('text-primary', 'fw-bold');
+                }
+            }
+        }
+
+        // === ГОЛОВНА ФІШКА: Слухаємо подію "ended" ===
+        audio.addEventListener('ended', function () {
+            console.log("Трек закінчився. Вмикаю наступний...");
+            loadTrack(currentIndex + 1);
+        });
+
+        // Запускаємо перший трек (якщо плейлист не порожній)
+        if (playlist.length > 0) {
+            loadTrack(0);
         } else {
-            console.log('Немає треків для відтворення.');
-            document.getElementById('audioPlayer').style.display = 'none';
+            trackLabel.innerText = "Немає треків";
+            audio.style.display = 'none';
         }
     });
 </script>

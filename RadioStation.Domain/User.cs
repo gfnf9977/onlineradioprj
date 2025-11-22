@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic; 
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace OnlineRadioStation.Domain
@@ -8,13 +8,12 @@ namespace OnlineRadioStation.Domain
     {
         [Key]
         public Guid UserId { get; set; }
-
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
-
+        public Guid? AssignedStationId { get; set; }
         public ICollection<RadioStationEntity> CreatedStations { get; set; } = new List<RadioStationEntity>();
         public ICollection<PlaybackQueue> AddedQueues { get; set; } = new List<PlaybackQueue>();
         public ICollection<SavedStation> SavedStations { get; set; } = new List<SavedStation>();
