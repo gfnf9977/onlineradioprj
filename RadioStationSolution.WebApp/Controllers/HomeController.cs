@@ -43,22 +43,16 @@ namespace RadioStationSolution.WebApp.Controllers
                 var user = await _userService.AuthenticateUserAsync(username, password);
                 if (user != null)
                 {
-                    switch (user.Role.ToLower())
+                    return user.Role.ToLower() switch
                     {
-                        case "admin":
-                            return RedirectToAction("AdminDashboard");
-                        case "dj":
-                            return RedirectToAction("DjDashboard");
-                        case "user":
-                        default:
-                            return RedirectToAction("UserDashboard");
-                    }
+                        "admin" => RedirectToAction("AdminDashboard"),
+                        "dj" => RedirectToAction("DjDashboard"),
+                        _ => RedirectToAction("UserDashboard")
+                    };
                 }
-                else
-                {
-                    ViewBag.Error = "Неправильний логін або пароль.";
-                    return View();
-                }
+
+                ViewBag.Error = "Неправильний логін або пароль.";
+                return View();
             }
             catch (Exception ex)
             {
@@ -67,15 +61,8 @@ namespace RadioStationSolution.WebApp.Controllers
             }
         }
 
-        public IActionResult AdminDashboard()
-        {
-            return View();
-        }
-
-        public IActionResult DjDashboard()
-        {
-            return View();
-        }
+        public IActionResult AdminDashboard() => View();
+        public IActionResult DjDashboard() => View();
 
         public async Task<IActionResult> UserDashboard()
         {
@@ -88,9 +75,13 @@ namespace RadioStationSolution.WebApp.Controllers
         {
             var station = await _stationService.GetStationWithPlaylistAsync(id);
             if (station == null)
-            {
                 return NotFound();
-            }
+
+            var (currentTrack, offset) = await _stationService.GetCurrentRadioStateAsync(id);
+
+            ViewBag.StartTrackId = currentTrack?.TrackId;
+            ViewBag.StartOffset = offset.TotalSeconds;
+
             return View(station);
         }
 
@@ -103,11 +94,12 @@ namespace RadioStationSolution.WebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string username, string email, string password)
         {
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(email))
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
                 ViewBag.Error = "Будь ласка, заповніть усі поля.";
                 return View();
             }
+
             try
             {
                 await _userService.CreateUserAsync(username, password, email);
