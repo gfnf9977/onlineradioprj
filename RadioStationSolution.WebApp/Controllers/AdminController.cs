@@ -138,7 +138,20 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> ManageUsers()
         {
             var users = await _userService.GetAllUsersAsync();
-            return View(users);
+            var sortedUsers = users.OrderBy(u =>
+            {
+                return u.Role.ToLower() switch
+                {
+                    "admin" => 1,
+                    "dj"    => 2,
+                    "user"  => 3,
+                    "banned"=> 4,
+                    _       => 5
+                };
+            })
+            .ThenBy(u => u.Username);
+
+            return View(sortedUsers);
         }
 
         [HttpGet]
@@ -147,7 +160,14 @@ namespace RadioStationSolution.WebApp.Controllers
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
 
-            ViewBag.Roles = new SelectList(new[] { "User", "Dj", "Admin" }, user.Role);
+            if (user.Role == "Admin")
+            {
+                return Content("Ви не можете редагувати роль Головного Адміністратора.");
+            }
+
+            var allowedRoles = new[] { "User", "Dj", "Banned" };
+            ViewBag.Roles = new SelectList(allowedRoles, user.Role);
+
             return View(user);
         }
 

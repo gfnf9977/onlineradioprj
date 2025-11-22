@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+
 namespace OnlineRadioStation.Services
 {
     public class UserService : IUserService
@@ -25,7 +26,17 @@ namespace OnlineRadioStation.Services
         {
             var user = await _userRepository.GetUserByUsernameAsync(username);
             if (user == null) { return null; }
-            if (user.PasswordHash == password) { return user; }
+
+            if (user.Role == "Banned")
+            {
+                throw new Exception("Ваш акаунт заблоковано адміністратором.");
+            }
+
+            if (user.PasswordHash == password)
+            {
+                return user;
+            }
+
             return null;
         }
 

@@ -37,23 +37,32 @@ namespace RadioStationSolution.WebApp.Controllers
                 ViewBag.Error = "Будь ласка, введіть логін та пароль.";
                 return View();
             }
-            var user = await _userService.AuthenticateUserAsync(username, password);
-            if (user != null)
+
+            try
             {
-                switch (user.Role.ToLower())
+                var user = await _userService.AuthenticateUserAsync(username, password);
+                if (user != null)
                 {
-                    case "admin":
-                        return RedirectToAction("AdminDashboard");
-                    case "dj":
-                        return RedirectToAction("DjDashboard");
-                    case "user":
-                    default:
-                        return RedirectToAction("UserDashboard");
+                    switch (user.Role.ToLower())
+                    {
+                        case "admin":
+                            return RedirectToAction("AdminDashboard");
+                        case "dj":
+                            return RedirectToAction("DjDashboard");
+                        case "user":
+                        default:
+                            return RedirectToAction("UserDashboard");
+                    }
+                }
+                else
+                {
+                    ViewBag.Error = "Неправильний логін або пароль.";
+                    return View();
                 }
             }
-            else
+            catch (Exception ex)
             {
-                ViewBag.Error = "Неправильний логін або пароль.";
+                ViewBag.Error = ex.Message;
                 return View();
             }
         }
