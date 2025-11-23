@@ -1,9 +1,8 @@
 @model IEnumerable<OnlineRadioStation.Domain.RadioStationEntity>
-
 @{
     ViewData["Title"] = "Моя сторінка";
+    var savedIds = ViewBag.SavedStationIds as HashSet<Guid>;
 }
-
 <style>
     .dashboard-grid {
         display: grid;
@@ -16,6 +15,7 @@
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         background-color: #f8f9fa;
+        position: relative;
     }
     .dashboard-card h3 {
         margin-top: 0;
@@ -23,20 +23,45 @@
         padding-bottom: 10px;
         margin-bottom: 15px;
     }
+    .favorite-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+    .favorite-btn.filled {
+        color: #dc3545;
+    }
+    .favorite-btn.empty {
+        color: #6c757d;
+    }
 </style>
 
 <h1>Моя сторінка</h1>
 <p>Ласкаво просимо!</p>
 <hr />
-
 <h2>Популярні станції</h2>
-
 @if (Model != null && Model.Any())
 {
     <div class="dashboard-grid">
         @foreach (var station in Model!)
         {
             <div class="dashboard-card">
+                <button class="favorite-btn @((savedIds != null && savedIds.Contains(station.StationId)) ? "filled" : "empty")"
+                        data-station-id="@station.StationId"
+                        onclick="toggleFavorite(this, '@station.StationId')">
+                    @if (savedIds != null && savedIds.Contains(station.StationId))
+                    {
+                        <i class="bi bi-heart-fill"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-heart"></i>
+                    }
+                </button>
                 <h3>@station.StationName</h3>
                 <p>@station.Description</p>
                 <a asp-controller="Home" asp-action="Listen" asp-route-id="@station.StationId" class="btn btn-primary">
@@ -49,4 +74,37 @@
 else
 {
     <p>Наразі немає доступних станцій.</p>
+}
+
+<form id="csrf-form" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        function toggleFavorite(button, stationId) {
+            fetch('/Home/ToggleFavorite?stationId=' + stationId, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('#csrf-form input').value
+                }
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    alert("Будь ласка, увійдіть знову.");
+                    window.location.href = "/Home/Login";
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.isSaved !== undefined) {
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
 }

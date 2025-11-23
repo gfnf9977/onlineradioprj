@@ -18,6 +18,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITrackRepository, TrackRepository>();
 builder.Services.AddScoped<IPlaybackQueueRepository, PlaybackQueueRepository>();
 builder.Services.AddScoped<IDjStreamRepository, DjStreamRepository>();
+builder.Services.AddScoped<ISavedStationRepository, SavedStationRepository>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSession();

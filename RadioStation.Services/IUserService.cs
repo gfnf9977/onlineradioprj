@@ -14,5 +14,7 @@ namespace OnlineRadioStation.Services
         Task UpdateUserRoleAsync(Guid id, string newRole); 
         Task DeleteUserAsync(Guid id); 
         Task UpdateUserRoleAndStationAsync(Guid id, string newRole, Guid? stationId);
+        Task<bool> ToggleSavedStationAsync(Guid userId, Guid stationId); 
+        Task<IEnumerable<Guid>> GetSavedStationIdsAsync(Guid userId); 
     }
 }

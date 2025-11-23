@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineRadioStation.Services;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RadioStationSolution.WebApp.Controllers
@@ -68,10 +69,27 @@ namespace RadioStationSolution.WebApp.Controllers
         public IActionResult DjDashboard() => View();
 
         public async Task<IActionResult> UserDashboard()
-        {
-            var stations = await _stationService.GetAllStationsAsync();
-            return View(stations);
-        }
+{
+    var stations = await _stationService.GetAllStationsAsync();
+
+    var userIdStr = HttpContext.Session.GetString("CurrentUserId");
+    HashSet<Guid> savedIds = new HashSet<Guid>();
+    
+    if (Guid.TryParse(userIdStr, out Guid userId))
+    {
+        var ids = await _userService.GetSavedStationIdsAsync(userId);
+        savedIds = new HashSet<Guid>(ids);
+    }
+
+    var sortedStations = stations
+        .OrderByDescending(s => savedIds.Contains(s.StationId)) 
+        .ThenBy(s => s.StationName) 
+        .ToList();
+
+    ViewBag.SavedStationIds = savedIds;
+    
+    return View(sortedStations);
+}
 
         [HttpGet]
         public async Task<IActionResult> Listen(Guid id)
@@ -114,6 +132,27 @@ namespace RadioStationSolution.WebApp.Controllers
             {
                 ViewBag.Error = ex.Message;
                 return View();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleFavorite(Guid stationId)
+        {
+            var userIdStr = HttpContext.Session.GetString("CurrentUserId");
+            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                bool isSaved = await _userService.ToggleSavedStationAsync(userId, stationId);
+                return Ok(new { isSaved = isSaved });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
