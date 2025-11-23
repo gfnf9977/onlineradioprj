@@ -183,5 +183,38 @@ namespace OnlineRadioStation.Services
                 .Where(l => l.UserId == userId)
                 .ToDictionaryAsync(l => l.TrackId, l => l.IsLike ? 1 : -1);
         }
+
+        public async Task<(int Likes, int Dislikes)> GetTrackVotesAsync(Guid trackId)
+        {
+            var votes = await _likeRepo.GetAll()
+                .Where(l => l.TrackId == trackId)
+                .ToListAsync(); 
+
+            int likes = votes.Count(l => l.IsLike);
+            int dislikes = votes.Count(l => !l.IsLike);
+
+            return (likes, dislikes);
+        }
+
+        public async Task<Dictionary<Guid, (int Likes, int Dislikes)>> GetVotesForTracksAsync(IEnumerable<Guid> trackIds)
+{
+            var allVotes = await _likeRepo.GetAll()
+               .Where(l => trackIds.Contains(l.TrackId))
+               .ToListAsync();
+
+            var result = new Dictionary<Guid, (int Likes, int Dislikes)>();
+
+            foreach (var trackId in trackIds)
+            {
+                var trackVotes = allVotes.Where(v => v.TrackId == trackId);
+                int likes = trackVotes.Count(v => v.IsLike);
+                int dislikes = trackVotes.Count(v => !v.IsLike);
+        
+                result[trackId] = (likes, dislikes);
+            } 
+
+    return result;
+}
+
     }
 }

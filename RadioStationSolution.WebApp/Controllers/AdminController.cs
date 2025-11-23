@@ -199,14 +199,20 @@ namespace RadioStationSolution.WebApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Library()
-        {
-            var allTracks = await _trackRepo.GetAll()
-                .Include(t => t.UploadedBy)
-                .OrderByDescending(t => t.Title)
-                .ToListAsync();
-            return View(allTracks);
-        }
+public async Task<IActionResult> Library()
+{
+    var allTracks = await _trackRepo.GetAll()
+        .Include(t => t.UploadedBy)
+        .OrderByDescending(t => t.Title)
+        .ToListAsync();
+
+    var trackIds = allTracks.Select(t => t.TrackId);
+    var stats = await _userService.GetVotesForTracksAsync(trackIds);
+    
+    ViewBag.TrackStats = stats;
+
+    return View(allTracks);
+}
 
         [HttpPost]
         [ValidateAntiForgeryToken]

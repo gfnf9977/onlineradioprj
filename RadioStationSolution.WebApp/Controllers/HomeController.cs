@@ -160,24 +160,26 @@ namespace RadioStationSolution.WebApp.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RateTrack(Guid trackId, bool isLike)
-        {
-            var userIdStr = HttpContext.Session.GetString("CurrentUserId");
-            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
-            {
-                return Unauthorized();
-            }
-            try
-            {
-                int newStatus = await _userService.ToggleTrackRatingAsync(userId, trackId, isLike);
-                return Ok(new { status = newStatus });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> RateTrack(Guid trackId, bool isLike)
+{
+    var userIdStr = HttpContext.Session.GetString("CurrentUserId");
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId)) return Unauthorized();
+
+    try
+    {
+        int newUserStatus = await _userService.ToggleTrackRatingAsync(userId, trackId, isLike);
+        
+        var (likes, dislikes) = await _userService.GetTrackVotesAsync(trackId);
+
+        return Ok(new { 
+            status = newUserStatus, 
+            likes = likes, 
+            dislikes = dislikes 
+        });
+    }
+    catch (Exception ex) { return BadRequest(ex.Message); }
+}
 
         public IActionResult Privacy()
         {

@@ -1,14 +1,12 @@
 @model OnlineRadioStation.Domain.RadioStationEntity
 @using System.Collections.Generic
 @using Microsoft.AspNetCore.Http
-
+@inject OnlineRadioStation.Services.IUserService _userService
 @{
     ViewData["Title"] = $"Ефір: {Model.StationName}";
-
     var iterator = Model.CreateIterator();
     iterator.First();
     var playlistForJs = new List<object>();
-
     bool isOffline = ViewBag.IsOffline ?? true;
     var userRatings = ViewBag.UserRatings as Dictionary<Guid, int> ?? new Dictionary<Guid, int>();
 
@@ -21,12 +19,18 @@
             if (!string.IsNullOrEmpty(track.HlsUrl))
             {
                 int rating = userRatings.ContainsKey(track.TrackId) ? userRatings[track.TrackId] : 0;
+
+                // Отримуємо лічильники лайків/дизлайків
+                var votes = _userService.GetTrackVotesAsync(track.TrackId).Result;
+
                 playlistForJs.Add(new {
                     trackId = track.TrackId.ToString(),
                     title = track.Title,
                     url = track.HlsUrl,
                     id = position,
-                    userRating = rating
+                    userRating = rating,
+                    likesCount = votes.Likes,       // Додали лічильник лайків
+                    dislikesCount = votes.Dislikes // Додали лічильник дзлайків
                 });
             }
             position++;
@@ -34,12 +38,10 @@
         }
     }
 }
-
 <div class="container mt-5 text-center">
     <h1 class="display-4 fw-bold">@Model.StationName</h1>
     <p class="lead text-muted">@Model.Description</p>
     <hr class="my-4 w-50 mx-auto" />
-
     @if (isOffline)
     {
         <div class="py-5">
@@ -61,23 +63,22 @@
             </button>
             <p class="mt-3 text-muted">Натисніть, щоб підключитися</p>
         </div>
-
         <div id="playerContainer" style="display:none;" class="py-4">
             <div class="card shadow-sm mx-auto border-0 bg-light" style="max-width: 500px;">
                 <div class="card-body text-center">
                     <h3 id="currentTrackName" class="fw-bold text-dark mb-3">Завантаження...</h3>
-
                     <div class="d-flex justify-content-center align-items-center gap-4 mb-4">
-                        <button id="btnDislike" class="btn btn-outline-secondary rounded-circle p-3" style="width: 60px; height: 60px;" onclick="rateTrack(false)">
+                        <!-- Оновлені кнопки з лічильниками -->
+                        <button id="btnDislike" class="btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center" style="width: 70px; height: 70px;" onclick="rateTrack(false)">
                             <i id="iconDislike" class="bi bi-hand-thumbs-down fs-4"></i>
+                            <span id="countDislike" class="small fw-bold" style="font-size: 0.7rem;"></span>
                         </button>
-                        <button id="btnLike" class="btn btn-outline-secondary rounded-circle p-3" style="width: 60px; height: 60px;" onclick="rateTrack(true)">
+                        <button id="btnLike" class="btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center" style="width: 70px; height: 70px;" onclick="rateTrack(true)">
                             <i id="iconLike" class="bi bi-hand-thumbs-up fs-4"></i>
+                            <span id="countLike" class="small fw-bold" style="font-size: 0.7rem;"></span>
                         </button>
                     </div>
-
                     <p class="text-muted small mb-0">Ви слухаєте прямий ефір</p>
-
                     <div class="mt-3">
                         <button onclick="toggleMute()" class="btn btn-sm btn-link text-secondary text-decoration-none">
                             <i id="muteIcon" class="bi bi-volume-up-fill fs-5"></i>
@@ -89,9 +90,7 @@
         </div>
     }
 </div>
-
 <form id="csrf-form" style="display:none;">@Html.AntiForgeryToken()</form>
-
 @section Scripts {
 @if (!isOffline)
 {
@@ -99,7 +98,6 @@
         var playlist = @Html.Raw(Json.Serialize(playlistForJs));
         var startTrackId = @Html.Raw(Json.Serialize(ViewBag.StartTrackId));
         var startOffset = @Html.Raw(Json.Serialize(ViewBag.StartOffset ?? 0));
-
         var audio = document.getElementById('audioPlayer');
         var btnStart = document.getElementById('btnStartRadio');
         var overlay = document.getElementById('playOverlay');
@@ -112,10 +110,11 @@
             if (index >= playlist.length) return;
             currentIndex = index;
             var track = playlist[index];
-
             trackLabel.innerText = track.title;
             document.getElementById('btnLike').dataset.trackId = track.trackId;
-            updateButtons(track.userRating);
+
+            // Оновлюємо кнопки з лічильниками
+            updateButtons(track.userRating, track.likesCount, track.dislikesCount);
 
             var streamUrl = track.url;
             if (Hls.isSupported()) {
@@ -155,30 +154,47 @@
                 if (response.status === 401) { alert("Увійдіть, щоб голосувати!"); return; }
                 if (response.ok) {
                     let data = await response.json();
-                    updateButtons(data.status);
+
+                    // Оновлюємо UI з новими даними від сервера
+                    updateButtons(data.status, data.likes, data.dislikes);
+
+                    // Оновлюємо пам'ять
                     playlist[currentIndex].userRating = data.status;
+                    playlist[currentIndex].likesCount = data.likes;
+                    playlist[currentIndex].dislikesCount = data.dislikes;
                 }
             } catch (e) { console.error(e); }
         };
 
-        function updateButtons(status) {
+        // Оновлена функція updateButtons з підтримкою лічильників
+        function updateButtons(status, likes, dislikes) {
             var btnLike = document.getElementById('btnLike');
             var btnDislike = document.getElementById('btnDislike');
             var iconLike = document.getElementById('iconLike');
             var iconDislike = document.getElementById('iconDislike');
+            var countLike = document.getElementById('countLike');
+            var countDislike = document.getElementById('countDislike');
 
-            btnLike.className = "btn btn-outline-secondary rounded-circle p-3";
-            btnDislike.className = "btn btn-outline-secondary rounded-circle p-3";
+            // Скидаємо стилі
+            btnLike.className = "btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center";
+            btnDislike.className = "btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center";
             iconLike.className = "bi bi-hand-thumbs-up fs-4";
             iconDislike.className = "bi bi-hand-thumbs-down fs-4";
 
-            if (status === 1) {
-                btnLike.className = "btn btn-success rounded-circle p-3";
+            // Фарбуємо активну кнопку
+            if (status === 1) { // Like
+                btnLike.classList.remove('btn-outline-secondary');
+                btnLike.classList.add('btn-success');
                 iconLike.className = "bi bi-hand-thumbs-up-fill fs-4";
-            } else if (status === -1) {
-                btnDislike.className = "btn btn-danger rounded-circle p-3";
+            } else if (status === -1) { // Dislike
+                btnDislike.classList.remove('btn-outline-secondary');
+                btnDislike.classList.add('btn-danger');
                 iconDislike.className = "bi bi-hand-thumbs-down-fill fs-4";
             }
+
+            // Оновлюємо цифри (якщо 0 - порожній рядок)
+            countLike.innerText = (likes > 0) ? likes : "";
+            countDislike.innerText = (dislikes > 0) ? dislikes : "";
         }
 
         var startIndex = 0;
@@ -186,13 +202,10 @@
             var foundIndex = playlist.findIndex(t => t.trackId === startTrackId);
             if (foundIndex !== -1) startIndex = foundIndex;
         }
-
         if (playlist.length > 0) {
             initTrack(startIndex, startOffset);
         }
-
         btnStart.addEventListener('click', playRadio);
-
         audio.addEventListener('ended', function () {
             currentIndex++;
             if (currentIndex >= playlist.length) currentIndex = 0;

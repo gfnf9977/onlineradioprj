@@ -19,5 +19,7 @@ namespace OnlineRadioStation.Services
         Task<int> ToggleTrackRatingAsync(Guid userId, Guid trackId, bool isLikeBtnPressed);
         Task<int> GetUserTrackRatingAsync(Guid userId, Guid trackId);
         Task<Dictionary<Guid, int>> GetUserTrackRatingsAsync(Guid userId);
+        Task<(int Likes, int Dislikes)> GetTrackVotesAsync(Guid trackId);
+        Task<Dictionary<Guid, (int Likes, int Dislikes)>> GetVotesForTracksAsync(IEnumerable<Guid> trackIds);
     }
 }
