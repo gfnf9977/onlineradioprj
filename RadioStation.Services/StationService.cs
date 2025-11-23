@@ -157,7 +157,7 @@ namespace OnlineRadioStation.Services
                 .FirstOrDefaultAsync(s => s.DjId == djId && s.EndTime == null);
         }
 
-        public async Task StartStreamAsync(Guid stationId, Guid djId)
+        public async Task StartStreamAsync(Guid stationId, Guid djId, bool isRandom = false)
         {
             var active = await GetActiveStreamAsync(djId);
             if (active != null)
@@ -170,6 +170,7 @@ namespace OnlineRadioStation.Services
                 StreamId = Guid.NewGuid(),
                 StationId = stationId,
                 DjId = djId,
+                IsRandom = isRandom,
                 StartTime = DateTime.UtcNow,
                 EndTime = null
             };

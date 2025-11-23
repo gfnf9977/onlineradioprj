@@ -33,15 +33,10 @@ namespace RadioStationSolution.WebApp.Controllers
         private async Task<User?> GetCurrentUserAsync()
         {
             var userIdStr = HttpContext.Session.GetString("CurrentUserId");
-            if (string.IsNullOrEmpty(userIdStr))
-            {
+            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
                 return null;
-            }
-            if (Guid.TryParse(userIdStr, out Guid userId))
-            {
-                return await _userService.GetUserByIdAsync(userId);
-            }
-            return null;
+
+            return await _userService.GetUserByIdAsync(userId);
         }
 
         [HttpGet]
@@ -52,6 +47,7 @@ namespace RadioStationSolution.WebApp.Controllers
                 return Content("У системі немає Діджеїв.");
             if (djUser.AssignedStationId == null)
                 return Content("Ваш акаунт ще не прив'язаний до жодної радіостанції. Зверніться до Адміністратора.");
+
             var station = await _stationService.GetStationByIdAsync(djUser.AssignedStationId.Value);
             ViewBag.StationName = station?.StationName ?? "Невідома станція";
             return View();
@@ -65,24 +61,30 @@ namespace RadioStationSolution.WebApp.Controllers
                 ModelState.AddModelError("trackFile", "Будь ласка, оберіть MP3-файл.");
             if (string.IsNullOrEmpty(title))
                 ModelState.AddModelError("title", "Будь ласка, введіть назву треку.");
+
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId == null)
                 return Content("Помилка доступу.");
+
             if (!ModelState.IsValid)
             {
                 var station = await _stationService.GetStationByIdAsync(djUser.AssignedStationId.Value);
                 ViewBag.StationName = station?.StationName ?? "Невідома станція";
                 return View();
             }
+
             var tempFileName = $"{Guid.NewGuid()}{Path.GetExtension(trackFile.FileName)}";
             var tempFilePath = Path.Combine(Path.GetTempPath(), tempFileName);
+
             await using (var stream = new FileStream(tempFilePath, FileMode.Create))
             {
                 await trackFile.CopyToAsync(stream);
             }
+
             IAudioConverter adapter = new FFmpegAdapter();
             StreamFactory factory = new BitrateStreamFactory(adapter);
             IAudioProcessor facade = new AudioProcessingFacade(adapter, _trackRepo, _queueRepo, factory);
+
             try
             {
                 await facade.ProcessNewTrackAsync(
@@ -104,6 +106,7 @@ namespace RadioStationSolution.WebApp.Controllers
                 if (System.IO.File.Exists(tempFilePath))
                     System.IO.File.Delete(tempFilePath);
             }
+
             return RedirectToAction(nameof(ManagePlaylist));
         }
 
@@ -113,8 +116,10 @@ namespace RadioStationSolution.WebApp.Controllers
             var djUser = await GetCurrentUserAsync();
             if (djUser == null)
                 return Content("Діджея не знайдено.");
+
             var history = await _stationService.GetStreamsByDjAsync(djUser.UserId);
             var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+
             var playlist = new List<PlaybackQueue>();
             if (djUser.AssignedStationId != null)
             {
@@ -124,28 +129,33 @@ namespace RadioStationSolution.WebApp.Controllers
                     playlist = station.Playbacks.OrderBy(p => p.QueuePosition).ToList();
                 }
             }
+
             ViewBag.CurrentPlaylist = playlist;
-            ViewBag.IsLive = (activeStream != null);
+            ViewBag.IsLive = activeStream != null;
+            ViewBag.IsRandom = activeStream?.IsRandom ?? false;
             ViewBag.StationId = djUser.AssignedStationId;
+
             if (activeStream != null)
             {
                 ViewBag.StreamStartTime = DateTime.SpecifyKind(activeStream.StartTime, DateTimeKind.Utc).ToString("o");
             }
+
             return View(history);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleStream(string action)
+        public async Task<IActionResult> ToggleStream(string action, bool startRandom = false)
         {
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId == null)
-                return RedirectToAction("ManageStreams");
+                return RedirectToAction(nameof(ManageStreams));
+
             try
             {
                 if (action == "start")
                 {
-                    await _stationService.StartStreamAsync(djUser.AssignedStationId.Value, djUser.UserId);
+                    await _stationService.StartStreamAsync(djUser.AssignedStationId.Value, djUser.UserId, startRandom);
                 }
                 else if (action == "stop")
                 {
@@ -156,6 +166,7 @@ namespace RadioStationSolution.WebApp.Controllers
             {
                 TempData["Error"] = ex.Message;
             }
+
             return RedirectToAction(nameof(ManageStreams));
         }
 
@@ -165,6 +176,7 @@ namespace RadioStationSolution.WebApp.Controllers
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId == null)
                 return Content("Помилка доступу.");
+
             var station = await _stationService.GetStationWithPlaylistAsync(djUser.AssignedStationId.Value);
             var playlist = station.Playbacks.OrderBy(p => p.QueuePosition).ToList();
             return View(playlist);
@@ -177,6 +189,7 @@ namespace RadioStationSolution.WebApp.Controllers
             var djUser = await GetCurrentUserAsync();
             if (djUser == null)
                 return RedirectToAction(nameof(ManagePlaylist));
+
             try
             {
                 await _queueRepo.DeleteEntity(queueId);
@@ -186,6 +199,7 @@ namespace RadioStationSolution.WebApp.Controllers
             {
                 Console.WriteLine($"Error removing from queue: {ex.Message}");
             }
+
             return RedirectToAction(nameof(ManagePlaylist));
         }
 
@@ -195,10 +209,12 @@ namespace RadioStationSolution.WebApp.Controllers
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.Role != "Dj")
                 return RedirectToAction("Login", "Home");
+
             var stationId = djUser.AssignedStationId;
             var allTracks = await _trackRepo.GetAll()
                 .OrderByDescending(t => t.Title)
                 .ToListAsync();
+
             HashSet<Guid> queuedTrackIds = new HashSet<Guid>();
             if (stationId != null)
             {
@@ -208,6 +224,7 @@ namespace RadioStationSolution.WebApp.Controllers
                     .ToListAsync();
                 queuedTrackIds = new HashSet<Guid>(idsInQueue);
             }
+
             ViewBag.QueuedTrackIds = queuedTrackIds;
             return View(allTracks);
         }
@@ -217,9 +234,8 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> EditTrackTitle(Guid trackId, string newTitle)
         {
             if (string.IsNullOrWhiteSpace(newTitle))
-            {
                 return RedirectToAction(nameof(Library));
-            }
+
             var track = await _trackRepo.GetById(trackId);
             if (track != null)
             {
@@ -227,6 +243,7 @@ namespace RadioStationSolution.WebApp.Controllers
                 _trackRepo.UpdateEntity(track);
                 await _trackRepo.SaveChangesAsync();
             }
+
             return RedirectToAction(nameof(Library));
         }
 
@@ -237,11 +254,13 @@ namespace RadioStationSolution.WebApp.Controllers
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.Role != "Dj")
                 return RedirectToAction("Login", "Home");
+
             if (djUser.AssignedStationId == null)
             {
                 TempData["Error"] = "Ваш акаунт не прив'язаний до станції.";
                 return RedirectToAction(nameof(Library));
             }
+
             var stationId = djUser.AssignedStationId.Value;
             var track = await _trackRepo.GetById(trackId);
             if (track == null)
@@ -249,17 +268,21 @@ namespace RadioStationSolution.WebApp.Controllers
                 TempData["Error"] = "Трек не знайдено.";
                 return RedirectToAction(nameof(Library));
             }
+
             var alreadyInQueue = await _queueRepo.GetAll()
                 .AnyAsync(q => q.StationId == stationId && q.TrackId == trackId);
+
             if (alreadyInQueue)
             {
                 TempData["Error"] = $"Трек '{track.Title}' вже є у вашому плейлисті!";
                 return RedirectToAction(nameof(Library));
             }
+
             var currentMaxPosition = await _queueRepo.GetAll()
                 .Where(q => q.StationId == stationId)
                 .Select(q => (int?)q.QueuePosition)
                 .MaxAsync() ?? 0;
+
             var newQueueItem = new PlaybackQueue
             {
                 QueueId = Guid.NewGuid(),
@@ -268,8 +291,10 @@ namespace RadioStationSolution.WebApp.Controllers
                 AddedById = djUser.UserId,
                 QueuePosition = currentMaxPosition + 1
             };
+
             _queueRepo.AddEntity(newQueueItem);
             await _queueRepo.SaveChangesAsync();
+
             TempData["Success"] = $"Трек '{track.Title}' успішно додано до ефіру!";
             return RedirectToAction(nameof(ManagePlaylist));
         }
@@ -281,12 +306,18 @@ namespace RadioStationSolution.WebApp.Controllers
             var currentItem = await _queueRepo.GetById(queueId);
             if (currentItem == null)
                 return RedirectToAction(nameof(ManagePlaylist));
+
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId != currentItem.StationId)
                 return Content("Помилка доступу.");
+
+            var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+            if (activeStream != null)
+                return RedirectToAction(nameof(ManagePlaylist));
+
             PlaybackQueue? targetItem = null;
-            var stationQueue = _queueRepo.GetAll()
-                .Where(q => q.StationId == currentItem.StationId);
+            var stationQueue = _queueRepo.GetAll().Where(q => q.StationId == currentItem.StationId);
+
             if (direction == "up")
             {
                 targetItem = await stationQueue
@@ -301,15 +332,15 @@ namespace RadioStationSolution.WebApp.Controllers
                     .OrderBy(q => q.QueuePosition)
                     .FirstOrDefaultAsync();
             }
+
             if (targetItem != null)
             {
-                int tempPos = currentItem.QueuePosition;
-                currentItem.QueuePosition = targetItem.QueuePosition;
-                targetItem.QueuePosition = tempPos;
+                (currentItem.QueuePosition, targetItem.QueuePosition) = (targetItem.QueuePosition, currentItem.QueuePosition);
                 _queueRepo.UpdateEntity(currentItem);
                 _queueRepo.UpdateEntity(targetItem);
                 await _queueRepo.SaveChangesAsync();
             }
+
             return RedirectToAction(nameof(ManagePlaylist));
         }
 
@@ -321,8 +352,16 @@ namespace RadioStationSolution.WebApp.Controllers
             if (currentItem == null)
                 return RedirectToAction(nameof(ManageStreams));
 
-            var stationQueue = _queueRepo.GetAll().Where(q => q.StationId == currentItem.StationId);
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null || djUser.AssignedStationId != currentItem.StationId)
+                return RedirectToAction(nameof(ManageStreams));
+
+            var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+            if (activeStream != null)
+                return RedirectToAction(nameof(ManageStreams));
+
             PlaybackQueue? targetItem = null;
+            var stationQueue = _queueRepo.GetAll().Where(q => q.StationId == currentItem.StationId);
 
             if (direction == "up")
                 targetItem = await stationQueue.Where(q => q.QueuePosition < currentItem.QueuePosition).OrderByDescending(q => q.QueuePosition).FirstOrDefaultAsync();
@@ -336,6 +375,7 @@ namespace RadioStationSolution.WebApp.Controllers
                 _queueRepo.UpdateEntity(targetItem);
                 await _queueRepo.SaveChangesAsync();
             }
+
             return RedirectToAction(nameof(ManageStreams));
         }
 
@@ -344,12 +384,21 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> ToggleTrackActive(Guid queueId)
         {
             var item = await _queueRepo.GetById(queueId);
-            if (item != null)
-            {
-                item.IsActive = !item.IsActive;
-                _queueRepo.UpdateEntity(item);
-                await _queueRepo.SaveChangesAsync();
-            }
+            if (item == null)
+                return RedirectToAction(nameof(ManageStreams));
+
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null || djUser.AssignedStationId != item.StationId)
+                return RedirectToAction(nameof(ManageStreams));
+
+            var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+            if (activeStream != null)
+                return RedirectToAction(nameof(ManageStreams));
+
+            item.IsActive = !item.IsActive;
+            _queueRepo.UpdateEntity(item);
+            await _queueRepo.SaveChangesAsync();
+
             return RedirectToAction(nameof(ManageStreams));
         }
 
@@ -362,6 +411,8 @@ namespace RadioStationSolution.WebApp.Controllers
                 return RedirectToAction("Login", "Home");
 
             var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+            if (activeStream != null)
+                return RedirectToAction(nameof(ManageStreams));
 
             if (activeStream != null)
             {

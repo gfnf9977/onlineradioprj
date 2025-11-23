@@ -20,28 +20,20 @@
                     <small class="text-muted">тривалість поточної сесії</small>
                 </div>
 
-                <div class="row justify-content-center mb-4">
-                    <div class="col-auto">
-                        <form asp-action="ToggleRandomMode" method="post">
-                            @if (isRandom)
-                            {
-                                <button type="submit" class="btn btn-warning shadow-sm">
-                                    <i class="bi bi-shuffle"></i> Вимкнути Shuffle
-                                </button>
-                                <div class="text-muted small mt-1">Грає випадковий порядок</div>
-                            }
-                            else
-                            {
-                                <button type="submit" class="btn btn-outline-secondary">
-                                    <i class="bi bi-shuffle"></i> Увімкнути Shuffle
-                                </button>
-                                <div class="text-muted small mt-1">Грає за порядком</div>
-                            }
-                        </form>
+                @if (isRandom)
+                {
+                    <div class="alert alert-info d-inline-block">
+                        <i class="bi bi-shuffle"></i> Ефір у режимі Shuffle (випадковий порядок)
                     </div>
-                </div>
+                }
+                else
+                {
+                    <div class="alert alert-secondary d-inline-block">
+                        <i class="bi bi-list-ol"></i> Ефір за порядком плейлиста
+                    </div>
+                }
 
-                <form asp-action="ToggleStream" method="post">
+                <form asp-action="ToggleStream" method="post" class="mt-4">
                     <input type="hidden" name="action" value="stop" />
                     <button type="submit" class="btn btn-danger btn-lg px-5">
                         ЗАВЕРШИТИ ЕФІР
@@ -52,8 +44,19 @@
             {
                 <h2 class="text-secondary">ОФЛАЙН</h2>
                 <p class="text-muted">Ефір зупинено. Готові почати?</p>
+
                 <form asp-action="ToggleStream" method="post">
                     <input type="hidden" name="action" value="start" />
+
+                    <div class="mb-3 text-start">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="startRandom" name="startRandom" value="true">
+                            <label class="form-check-label" for="startRandom">
+                                Запустити у режимі Shuffle (випадковий порядок)
+                            </label>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-success btn-lg px-5">
                         ПОЧАТИ ЕФІР
                     </button>
@@ -63,11 +66,31 @@
     </div>
 
     <hr class="my-5" />
-    <div class="row mb-3">
+
+    <div class="row mb-3 align-items-center">
         <div class="col">
             <h2>Поточний ефір</h2>
             <p class="text-muted">Черга відтворення на станції.</p>
         </div>
+        @if (!isLive)
+        {
+            <div class="col-auto">
+                <form asp-action="ToggleRandomMode" method="post" class="d-inline">
+                    @if (isRandom)
+                    {
+                        <button type="submit" class="btn btn-warning shadow-sm">
+                            <i class="bi bi-shuffle"></i> Вимкнути Shuffle
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-shuffle"></i> Увімкнути Shuffle
+                        </button>
+                    }
+                </form>
+            </div>
+        }
     </div>
 
     @if (playlist != null && playlist.Any())
@@ -78,10 +101,10 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 50px;">#</th>
-                            <th style="width: 80px;">Сортування</th>
+                            <th style="width: 60px;">Сорт</th>
                             <th>Назва треку</th>
                             <th>Тривалість</th>
-                            <th class="text-end">Дії в ефірі</th>
+                            <th class="text-end">Налаштування</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -89,46 +112,71 @@
                         @foreach (var item in playlist)
                         {
                             string rowClass = item.IsActive ? "" : "table-secondary text-muted text-decoration-line-through";
+
                             <tr class="@rowClass">
                                 <td class="fw-bold text-secondary">@(rowNum++)</td>
+
                                 <td>
-                                    <div class="btn-group-vertical btn-group-sm">
-                                        @if (item != playlist.First())
-                                        {
-                                            <form asp-action="ChangeStreamQueuePosition" method="post">
-                                                <input type="hidden" name="queueId" value="@item.QueueId" />
-                                                <input type="hidden" name="direction" value="up" />
-                                                <button type="submit" class="btn btn-light border py-0"><i class="bi bi-caret-up-fill"></i></button>
-                                            </form>
-                                        }
-                                        @if (item != playlist.Last())
-                                        {
-                                            <form asp-action="ChangeStreamQueuePosition" method="post">
-                                                <input type="hidden" name="queueId" value="@item.QueueId" />
-                                                <input type="hidden" name="direction" value="down" />
-                                                <button type="submit" class="btn btn-light border py-0"><i class="bi bi-caret-down-fill"></i></button>
-                                            </form>
-                                        }
-                                    </div>
+                                    @if (!isLive && !isRandom)
+                                    {
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            @if (item != playlist.First())
+                                            {
+                                                <form asp-action="ChangeStreamQueuePosition" method="post">
+                                                    <input type="hidden" name="queueId" value="@item.QueueId" />
+                                                    <input type="hidden" name="direction" value="up" />
+                                                    <button type="submit" class="btn btn-light border py-0"><i class="bi bi-caret-up-fill"></i></button>
+                                                </form>
+                                            }
+                                            @if (item != playlist.Last())
+                                            {
+                                                <form asp-action="ChangeStreamQueuePosition" method="post">
+                                                    <input type="hidden" name="queueId" value="@item.QueueId" />
+                                                    <input type="hidden" name="direction" value="down" />
+                                                    <button type="submit" class="btn btn-light border py-0"><i class="bi bi-caret-down-fill"></i></button>
+                                                </form>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
                                 </td>
+
                                 <td><span class="fw-bold">@item.Track.Title</span></td>
                                 <td>@item.Track.Duration.ToString(@"mm\:ss")</td>
+
                                 <td class="text-end">
-                                    <form asp-action="ToggleTrackActive" method="post">
-                                        <input type="hidden" name="queueId" value="@item.QueueId" />
+                                    @if (isLive)
+                                    {
                                         @if (item.IsActive)
                                         {
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Пропустити цей трек">
-                                                <i class="bi bi-slash-circle"></i> Скіпнути
-                                            </button>
+                                            <span class="badge bg-success">В ротації</span>
                                         }
                                         else
                                         {
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Повернути в ефір">
-                                                <i class="bi bi-play-circle"></i> Відновити
-                                            </button>
+                                            <span class="badge bg-secondary">Пропущено</span>
                                         }
-                                    </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="ToggleTrackActive" method="post">
+                                            <input type="hidden" name="queueId" value="@item.QueueId" />
+                                            @if (item.IsActive)
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-slash-circle"></i> Скіпнути
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-play-circle"></i> Відновити
+                                                </button>
+                                            }
+                                        </form>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -158,9 +206,7 @@
             {
                 <tr>
                     <td>@stream.StartTime.ToLocalTime().ToString("g")</td>
-                    <td>
-                        @(stream.EndTime.HasValue ? stream.EndTime.Value.ToLocalTime().ToString("g") : "-")
-                    </td>
+                    <td>@(stream.EndTime.HasValue ? stream.EndTime.Value.ToLocalTime().ToString("g") : "-")</td>
                     <td>
                         @if (stream.EndTime.HasValue)
                         {
