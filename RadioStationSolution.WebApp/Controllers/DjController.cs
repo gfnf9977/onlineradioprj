@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace RadioStationSolution.WebApp.Controllers
 {
@@ -200,13 +201,26 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> Library()
         {
             var djUser = await GetCurrentUserAsync();
-            if (djUser == null)
+            if (djUser == null || djUser.Role != "Dj")
                 return RedirectToAction("Login", "Home");
 
+            var stationId = djUser.AssignedStationId;
             var allTracks = await _trackRepo.GetAll()
                 .OrderByDescending(t => t.Title)
                 .ToListAsync();
 
+            HashSet<Guid> queuedTrackIds = new HashSet<Guid>();
+            if (stationId != null)
+            {
+                var idsInQueue = await _queueRepo.GetAll()
+                    .Where(q => q.StationId == stationId.Value)
+                    .Select(q => q.TrackId)
+                    .ToListAsync();
+
+                queuedTrackIds = new HashSet<Guid>(idsInQueue);
+            }
+
+            ViewBag.QueuedTrackIds = queuedTrackIds;
             return View(allTracks);
         }
 
@@ -228,6 +242,54 @@ namespace RadioStationSolution.WebApp.Controllers
             }
 
             return RedirectToAction(nameof(Library));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddToQueue(Guid trackId)
+        {
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null || djUser.Role != "Dj")
+                return RedirectToAction("Login", "Home");
+            if (djUser.AssignedStationId == null)
+            {
+                TempData["Error"] = "Ваш акаунт не прив'язаний до станції.";
+                return RedirectToAction(nameof(Library));
+            }
+            var stationId = djUser.AssignedStationId.Value;
+            var track = await _trackRepo.GetById(trackId);
+            if (track == null)
+            {
+                TempData["Error"] = "Трек не знайдено.";
+                return RedirectToAction(nameof(Library));
+            }
+
+            var alreadyInQueue = await _queueRepo.GetAll()
+                .AnyAsync(q => q.StationId == stationId && q.TrackId == trackId);
+            if (alreadyInQueue)
+            {
+                TempData["Error"] = $"Трек '{track.Title}' вже є у вашому плейлисті!";
+                return RedirectToAction(nameof(Library));
+            }
+
+            var currentMaxPosition = await _queueRepo.GetAll()
+                .Where(q => q.StationId == stationId)
+                .Select(q => (int?)q.QueuePosition)
+                .MaxAsync() ?? 0;
+
+            var newQueueItem = new PlaybackQueue
+            {
+                QueueId = Guid.NewGuid(),
+                TrackId = trackId,
+                StationId = stationId,
+                AddedById = djUser.UserId,
+                QueuePosition = currentMaxPosition + 1
+            };
+            _queueRepo.AddEntity(newQueueItem);
+            await _queueRepo.SaveChangesAsync();
+            TempData["Success"] = $"Трек '{track.Title}' успішно додано до ефіру!";
+
+            return RedirectToAction(nameof(ManagePlaylist));
         }
     }
 }
