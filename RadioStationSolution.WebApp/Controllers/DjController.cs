@@ -32,16 +32,13 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> Upload()
         {
             var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
-
             if (djUser == null)
                 return Content("У системі немає Діджеїв.");
-
             if (djUser.AssignedStationId == null)
                 return Content("Ваш акаунт ще не прив'язаний до жодної радіостанції. Зверніться до Адміністратора.");
 
             var station = await _stationService.GetStationByIdAsync(djUser.AssignedStationId.Value);
             ViewBag.StationName = station?.StationName ?? "Невідома станція";
-
             return View();
         }
 
@@ -51,7 +48,6 @@ namespace RadioStationSolution.WebApp.Controllers
         {
             if (trackFile == null || trackFile.Length == 0)
                 ModelState.AddModelError("trackFile", "Будь ласка, оберіть MP3-файл.");
-
             if (string.IsNullOrEmpty(title))
                 ModelState.AddModelError("title", "Будь ласка, введіть назву треку.");
 
@@ -68,7 +64,6 @@ namespace RadioStationSolution.WebApp.Controllers
 
             var tempFileName = $"{Guid.NewGuid()}{Path.GetExtension(trackFile.FileName)}";
             var tempFilePath = Path.Combine(Path.GetTempPath(), tempFileName);
-
             await using (var stream = new FileStream(tempFilePath, FileMode.Create))
             {
                 await trackFile.CopyToAsync(stream);
@@ -101,6 +96,54 @@ namespace RadioStationSolution.WebApp.Controllers
             }
 
             return RedirectToAction("Listen", "Home", new { id = djUser.AssignedStationId.Value });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ManageStreams()
+        {
+            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            if (djUser == null)
+                return Content("Діджея не знайдено.");
+
+            var history = await _stationService.GetStreamsByDjAsync(djUser.UserId);
+            var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+
+            ViewBag.IsLive = (activeStream != null);
+            ViewBag.StationId = djUser.AssignedStationId;
+
+            if (activeStream != null)
+            {
+                ViewBag.StreamStartTime = DateTime.SpecifyKind(activeStream.StartTime, DateTimeKind.Utc).ToString("o");
+            }
+
+            return View(history);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStream(string action)
+        {
+            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            if (djUser == null || djUser.AssignedStationId == null)
+                return RedirectToAction("ManageStreams");
+
+            try
+            {
+                if (action == "start")
+                {
+                    await _stationService.StartStreamAsync(djUser.AssignedStationId.Value, djUser.UserId);
+                }
+                else if (action == "stop")
+                {
+                    await _stationService.StopStreamAsync(djUser.UserId);
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(ManageStreams));
         }
     }
 }

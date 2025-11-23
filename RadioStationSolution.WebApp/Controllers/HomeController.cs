@@ -78,9 +78,11 @@ namespace RadioStationSolution.WebApp.Controllers
                 return NotFound();
 
             var (currentTrack, offset) = await _stationService.GetCurrentRadioStateAsync(id);
+            bool isOffline = (currentTrack == null);
 
             ViewBag.StartTrackId = currentTrack?.TrackId;
             ViewBag.StartOffset = offset.TotalSeconds;
+            ViewBag.IsOffline = isOffline;
 
             return View(station);
         }

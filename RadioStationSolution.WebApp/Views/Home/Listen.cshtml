@@ -1,79 +1,111 @@
 @model OnlineRadioStation.Domain.RadioStationEntity
 @using System.Collections.Generic
+
 @{
-    ViewData["Title"] = $"Слухати: {Model.StationName}";
+    ViewData["Title"] = $"Ефір: {Model.StationName}";
+    
     var iterator = Model.CreateIterator();
     iterator.First();
     var playlistForJs = new List<object>();
-}
-<h1 class="display-5 fw-bold text-center mb-4">Зараз грає: @Model.StationName</h1>
-<p class="text-center text-muted mb-5">@Model.Description</p>
-<div id="playOverlay" class="text-center my-5">
-    <button id="btnStartRadio" class="btn btn-lg btn-success rounded-pill px-5 py-4 shadow-lg fs-3">
-        <i class="bi bi-broadcast"></i> Увімкнути Радіо ROKS
-    </button>
-    <p class="mt-3 text-muted">Натисни, щоб підключитися до живого ефіру</p>
-</div>
-<div id="playerContainer" style="display:none;" class="text-center">
-    <video id="audioPlayer" controls preload="none" style="width: 100%; max-width: 650px; background:#000; border-radius:12px;" class="shadow"></video>
-    <div class="mt-3">
-        <strong>Грає зараз:</strong>
-        <span id="currentTrackName" class="text-success fs-5 fw-bold">готуємо ефір...</span>
-    </div>
-</div>
-<hr class="my-5" />
-@if (iterator.IsDone())
-{
-    <div class="alert alert-warning text-center">
-        Плейлист порожній. Діджей ще не ввімкнув ефір
-    </div>
-}
-else
-{
-    <h3 class="mb-4">Плейлист станції</h3>
-    <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Назва треку</th>
-                <th>Тривалість</th>
-                <th>Статус</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{ int position = 1; }
-            @while (!iterator.IsDone())
-            {
-                var track = iterator.Current();
-                if (!string.IsNullOrEmpty(track.HlsUrl))
-                {
-                    playlistForJs.Add(new
-                    {
-                        trackId = track.TrackId.ToString(),
-                        title = track.Title,
-                        url = track.HlsUrl,
-                        id = position
-                    });
-                }
-                <tr id="row-@position">
-                    <td>@(position++)</td>
-                    <td>@track.Title</td>
-                    <td>@track.Duration.ToString(@"mm\:ss")</td>
-                    <td class="status-cell text-muted">в черзі</td>
-                </tr>
-                iterator.Next();
-            }
-        </tbody>
-    </table>
+    
+    bool isOffline = ViewBag.IsOffline ?? true; // Отримуємо статус
 }
 
+<div class="container mt-5 text-center">
+    
+    @* === ЗАГОЛОВОК === *@
+    <h1 class="display-4 fw-bold">@Model.StationName</h1>
+    <p class="lead text-muted">@Model.Description</p>
+    <hr class="my-4 w-50 mx-auto" />
+
+    @if (isOffline)
+    {
+        @* === БЛОК ОФЛАЙН === *@
+        <div class="py-5">
+            <i class="bi bi-mic-mute-fill text-secondary" style="font-size: 5rem;"></i>
+            <h2 class="mt-3 text-secondary">Ефір завершено</h2>
+            <p>Діджей наразі не веде трансляцію. Зачекайте на початок ефіру.</p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary mt-3">Повернутися на головну</a>
+        </div>
+    }
+    else
+    {
+        @* === БЛОК ОНЛАЙН === *@
+        
+        <div id="playOverlay" class="py-5">
+            <div class="mb-4">
+                <div class="spinner-grow text-danger" role="status" style="width: 1rem; height: 1rem;"></div>
+                <span class="text-danger fw-bold ms-2">LIVE</span>
+            </div>
+            
+            <button id="btnStartRadio" class="btn btn-danger btn-lg rounded-circle shadow-lg" style="width: 80px; height: 80px;">
+                <i class="bi bi-play-fill fs-1"></i>
+            </button>
+            <p class="mt-3 text-muted">Натисніть, щоб підключитися</p>
+        </div>
+
+        <div id="playerContainer" style="display:none;" class="py-4">
+            <div class="card shadow-sm mx-auto border-0 bg-light" style="max-width: 500px;">
+                <div class="card-body text-center">
+                    <div class="mb-3 text-primary animate-pulse">
+                        <i class="bi bi-soundwave" style="font-size: 4rem;"></i>
+                    </div>
+
+                    <h3 id="currentTrackName" class="fw-bold text-dark">Завантаження...</h3>
+                    <p class="text-muted small mb-4">Ви слухаєте прямий ефір</p>
+
+                    <div class="d-flex justify-content-center align-items-center gap-3">
+                        <button onclick="toggleMute()" class="btn btn-outline-secondary rounded-circle" style="width: 50px; height: 50px;">
+                            <i id="muteIcon" class="bi bi-volume-up-fill"></i>
+                        </button>
+                        
+                        <audio id="audioPlayer" style="width: 0; height: 0;"></audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 text-start mx-auto" style="max-width: 600px;">
+            <h5 class="text-muted mb-3">Історія треків</h5>
+            <table class="table table-sm table-borderless">
+                <tbody>
+                    @{ int position = 1; }
+                    @while (!iterator.IsDone())
+                    {
+                        var track = iterator.Current();
+                        if (!string.IsNullOrEmpty(track.HlsUrl))
+                        {
+                            playlistForJs.Add(new { 
+                                trackId = track.TrackId.ToString(),
+                                title = track.Title, 
+                                url = track.HlsUrl,
+                                id = position 
+                            });
+                        }
+                        <tr id="row-@position" class="border-bottom">
+                            <td class="text-muted">@position</td>
+                            <td>@track.Title</td>
+                            <td class="text-end text-muted">@track.Duration.ToString(@"mm\:ss")</td>
+                            <td class="status-cell text-end" style="width: 80px;"></td>
+                        </tr>
+                        position++;
+                        iterator.Next();
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
 @section Scripts {
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
+@if (!isOffline)
+{
+    <script>
+        // === ЛОГІКА ПЛЕЄРА ЗАЛИШАЄТЬСЯ МАЙЖЕ ТАКОЮ Ж ===
         var playlist = @Html.Raw(Json.Serialize(playlistForJs));
         var startTrackId = @Html.Raw(Json.Serialize(ViewBag.StartTrackId));
-        var startOffset = @Html.Raw(Json.Serialize(ViewBag.StartOffset ?? 0));
+        var startOffset = @Html.Raw(Json.Serialize(ViewBag.StartOffset ?? 0)); 
+
         var audio = document.getElementById('audioPlayer');
         var btnStart = document.getElementById('btnStartRadio');
         var overlay = document.getElementById('playOverlay');
@@ -82,85 +114,79 @@ else
         var currentIndex = 0;
         var hls = null;
 
-        function updateTableUI(rowId) {
-            document.querySelectorAll('tr').forEach(row => {
-                row.classList.remove('table-active');
-                var cell = row.querySelector('.status-cell');
-                if(cell) {
-                    cell.innerText = "В черзі";
-                    cell.className = "status-cell text-muted";
-                }
-            });
-            var activeRow = document.getElementById('row-' + rowId);
-            if (activeRow) {
-                activeRow.classList.add('table-active');
-                var cell = activeRow.querySelector('.status-cell');
-                if(cell) {
-                    cell.innerText = "🔊 Грає";
-                    cell.className = "status-cell text-primary fw-bold";
-                }
-            }
-        }
-
-        function loadTrack(index, seekTo = 0) {
-            if (index >= playlist.length) return;
+        function initTrack(index, startTime = 0) {
+            if (index >= playlist.length) return; // Або зациклити тут
             currentIndex = index;
             var track = playlist[index];
             trackLabel.innerText = track.title;
             updateTableUI(track.id);
+
             var streamUrl = track.url;
             if (Hls.isSupported()) {
                 if(hls) hls.destroy();
                 hls = new Hls();
                 hls.loadSource(streamUrl);
                 hls.attachMedia(audio);
-                if (seekTo > 0) {
-                    hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                        audio.currentTime = seekTo;
-                    });
+                if (startTime > 0) {
+                    hls.on(Hls.Events.MANIFEST_PARSED, function () { audio.currentTime = startTime; });
                 }
             } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
                 audio.src = streamUrl;
-                if (seekTo > 0) {
-                    audio.currentTime = seekTo;
-                }
+                if (startTime > 0) audio.currentTime = startTime;
+            }
+        }
+
+        function updateTableUI(rowId) {
+            document.querySelectorAll('tr').forEach(row => {
+                var cell = row.querySelector('.status-cell');
+                if(cell) cell.innerHTML = "";
+                row.classList.remove("bg-light");
+            });
+            var activeRow = document.getElementById('row-' + rowId);
+            if (activeRow) {
+                activeRow.classList.add("bg-light");
+                var cell = activeRow.querySelector('.status-cell');
+                if(cell) cell.innerHTML = '<span class="badge bg-danger">LIVE</span>';
             }
         }
 
         function playRadio() {
             overlay.style.display = 'none';
             container.style.display = 'block';
-            audio.play().catch(e => console.error("Playback failed:", e));
+            audio.play().catch(e => console.error(e));
         }
+        
+        // Кнопка Mute
+        window.toggleMute = function() {
+            audio.muted = !audio.muted;
+            var icon = document.getElementById('muteIcon');
+            if (audio.muted) {
+                icon.className = "bi bi-volume-mute-fill";
+            } else {
+                icon.className = "bi bi-volume-up-fill";
+            }
+        };
 
+        // ЛОГІКА ЗАПУСКУ
         var startIndex = 0;
         if (startTrackId) {
             var foundIndex = playlist.findIndex(t => t.trackId === startTrackId);
-            if (foundIndex !== -1) {
-                startIndex = foundIndex;
-            }
+            if (foundIndex !== -1) startIndex = foundIndex;
         }
 
         if (playlist.length > 0) {
-            loadTrack(startIndex, startOffset);
+            initTrack(startIndex, startOffset);
         }
 
         btnStart.addEventListener('click', playRadio);
 
-        // Авто-перемикання (Зациклене)
+        // Зациклене перемикання
         audio.addEventListener('ended', function () {
             currentIndex++;
-
-            // Якщо дійшли до кінця списку -> повертаємось на початок (0)
-            if (currentIndex >= playlist.length) {
-                console.log("Плейлист закінчився. Починаємо спочатку (Loop).");
-                currentIndex = 0;
-            }
-
-            // Запускаємо наступний (або перший) трек
-            loadTrack(currentIndex, 0);
+            if (currentIndex >= playlist.length) currentIndex = 0;
+            initTrack(currentIndex, 0);
             audio.play();
         });
-    });
-</script>
+    </script>
+}
 }

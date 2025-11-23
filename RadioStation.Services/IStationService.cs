@@ -13,6 +13,10 @@ namespace OnlineRadioStation.Services
         Task UpdateStationAsync(Guid id, string name, string description);
         Task DeleteStationAsync(Guid id);
         Task<RadioStationEntity?> GetStationWithPlaylistAsync(Guid id);
+        Task<IEnumerable<DjStream>> GetStreamsByDjAsync(Guid djId);
+        Task StartStreamAsync(Guid stationId, Guid djId);
+        Task StopStreamAsync(Guid djId);
+        Task<DjStream?> GetActiveStreamAsync(Guid djId);
         
         Task<(Track? CurrentTrack, TimeSpan Offset)> GetCurrentRadioStateAsync(Guid stationId);
     }

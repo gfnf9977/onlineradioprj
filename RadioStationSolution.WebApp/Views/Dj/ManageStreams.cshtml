@@ -1,0 +1,116 @@
+@model IEnumerable<OnlineRadioStation.Domain.DjStream>
+@{
+    ViewData["Title"] = "Управління стрімами";
+    bool isLive = ViewBag.IsLive ?? false;
+}
+<div class="container">
+    <h1>🎙️ Управління ефіром</h1>
+    <hr />
+    <div class="card mb-4 text-center shadow-sm @(isLive ? "border-success" : "border-secondary")">
+        <div class="card-body">
+            @if (isLive)
+            {
+                <h2 class="text-success animate-pulse">🔴 В ЕФІРІ (ON AIR)</h2>
+                <p class="text-muted">Ви зараз ведете трансляцію.</p>
+
+                <div class="my-3 p-3 bg-light rounded border">
+                    <h1 id="liveTimer" class="display-4 fw-bold text-dark" style="font-family: monospace;">00:00:00</h1>
+                    <small class="text-muted">тривалість поточної сесії</small>
+                </div>
+
+                <form asp-action="ToggleStream" method="post">
+                    <input type="hidden" name="action" value="stop" />
+                    <button type="submit" class="btn btn-danger btn-lg px-5">
+                        ⏹ ЗАВЕРШИТИ ЕФІР
+                    </button>
+                </form>
+            }
+            else
+            {
+                <h2 class="text-secondary">⚫ ОФЛАЙН</h2>
+                <p class="text-muted">Ефір зупинено. Готові почати?</p>
+                <form asp-action="ToggleStream" method="post">
+                    <input type="hidden" name="action" value="start" />
+                    <button type="submit" class="btn btn-success btn-lg px-5">
+                        ▶ ПОЧАТИ ЕФІР
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <h3>Історія сесій</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Початок</th>
+                <th>Кінець</th>
+                <th>Тривалість</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var stream in Model)
+            {
+                <tr>
+                    <td>@stream.StartTime.ToLocalTime().ToString("g")</td>
+                    <td>
+                        @(stream.EndTime.HasValue ? stream.EndTime.Value.ToLocalTime().ToString("g") : "-")
+                    </td>
+                    <td>
+                        @if (stream.EndTime.HasValue)
+                        {
+                            var duration = stream.EndTime.Value - stream.StartTime;
+                            <span>@duration.ToString(@"hh\:mm") год</span>
+                        }
+                        else
+                        {
+                            <span class="text-success">Триває...</span>
+                        }
+                    </td>
+                    <td>
+                        @if (stream.EndTime == null)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Finished</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var startTimeStr = '@ViewBag.StreamStartTime';
+        if (startTimeStr) {
+            var startTime = new Date(startTimeStr);
+            var timerElement = document.getElementById('liveTimer');
+
+            function updateTimer() {
+                var now = new Date();
+                var diff = now - startTime;
+                var totalSeconds = Math.floor(diff / 1000);
+                var hours = Math.floor(totalSeconds / 3600);
+                var minutes = Math.floor((totalSeconds % 3600) / 60);
+                var seconds = totalSeconds % 60;
+
+                var formattedTime =
+                    (hours < 10 ? "0" + hours : hours) + ":" +
+                    (minutes < 10 ? "0" + minutes : minutes) + ":" +
+                    (seconds < 10 ? "0" + seconds : seconds);
+
+                timerElement.innerText = formattedTime;
+            }
+
+            setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+    });
+</script>
+}

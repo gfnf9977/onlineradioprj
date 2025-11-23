@@ -86,6 +86,7 @@ namespace OnlineRadioStation.Services
         {
             var allStreams = await _streamRepository.GetAll().ToListAsync();
             var activeStream = allStreams.FirstOrDefault(s => s.StationId == stationId && s.EndTime == null);
+
             if (activeStream == null)
             {
                 return (null, TimeSpan.Zero);
@@ -107,23 +108,17 @@ namespace OnlineRadioStation.Services
                 return (null, TimeSpan.Zero);
             }
 
-            // 1. Рахуємо загальну тривалість плейлиста
             long totalTicks = playlist.Sum(t => t.Duration.Ticks);
             if (totalTicks == 0)
             {
-                return (playlist.First(), TimeSpan.Zero);
+                return (playlist.FirstOrDefault(), TimeSpan.Zero);
             }
 
             var totalDuration = TimeSpan.FromTicks(totalTicks);
-
-            // 2. Скільки часу пройшло реально
             var realTimeElapsed = DateTime.UtcNow - activeStream.StartTime;
-
-            // 3. Використовуємо "Остачу від ділення" (Modulo), щоб зациклити час
             long currentLoopTicks = realTimeElapsed.Ticks % totalTicks;
             var loopTimeElapsed = TimeSpan.FromTicks(currentLoopTicks);
 
-            // 4. Шукаємо трек у цьому колі
             foreach (var track in playlist)
             {
                 if (loopTimeElapsed < track.Duration)
@@ -133,7 +128,56 @@ namespace OnlineRadioStation.Services
                 loopTimeElapsed -= track.Duration;
             }
 
-            return (playlist.First(), TimeSpan.Zero);
+            return (playlist.FirstOrDefault(), TimeSpan.Zero);
+        }
+
+        public async Task<IEnumerable<DjStream>> GetStreamsByDjAsync(Guid djId)
+        {
+            return await _streamRepository.GetAll()
+                .Where(s => s.DjId == djId)
+                .OrderByDescending(s => s.StartTime)
+                .ToListAsync();
+        }
+
+        public async Task<DjStream?> GetActiveStreamAsync(Guid djId)
+        {
+            return await _streamRepository.GetAll()
+                .FirstOrDefaultAsync(s => s.DjId == djId && s.EndTime == null);
+        }
+
+        public async Task StartStreamAsync(Guid stationId, Guid djId)
+        {
+            var active = await GetActiveStreamAsync(djId);
+            if (active != null)
+            {
+                throw new Exception("Ефір вже триває! Спочатку завершіть поточний.");
+            }
+
+            var newStream = new DjStream
+            {
+                StreamId = Guid.NewGuid(),
+                StationId = stationId,
+                DjId = djId,
+                StartTime = DateTime.UtcNow,
+                EndTime = null
+            };
+
+            _streamRepository.AddEntity(newStream);
+            await _streamRepository.SaveChangesAsync();
+        }
+
+        public async Task StopStreamAsync(Guid djId)
+        {
+            var activeStream = await GetActiveStreamAsync(djId);
+            if (activeStream == null)
+            {
+                throw new Exception("Немає активного ефіру для завершення.");
+            }
+
+            activeStream.EndTime = DateTime.UtcNow;
+            _streamRepository.UpdateEntity(activeStream);
+            await _streamRepository.SaveChangesAsync();
         }
     }
 }
+ 
