@@ -42,8 +42,10 @@
         <a asp-controller="Admin" asp-action="ShowStats" class="btn btn-primary">Перейти</a>
     </div>
     <div class="dashboard-card">
-        <h3>Налаштування системи</h3>
-        <p>Загальні налаштування додатку.</p>
-        <a href="#" class="btn btn-secondary disabled">Незабаром</a>
+        <h3>Глобальна бібліотека</h3>
+        <p>Управління всіма треками, завантаження та очищення бази.</p>
+        <a asp-controller="Admin" asp-action="Library" class="btn btn-warning text-dark">
+        <i class="bi bi-music-note-list"></i> Відкрити архів
+        </a>
     </div>
 </div>

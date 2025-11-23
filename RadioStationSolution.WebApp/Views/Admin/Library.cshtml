@@ -1,0 +1,87 @@
+@model IEnumerable<OnlineRadioStation.Domain.Track>
+@{
+    ViewData["Title"] = "Глобальна бібліотека";
+}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>🗄️ Глобальна бібліотека</h1>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#adminUploadModal">
+            <i class="bi bi-cloud-upload"></i> Завантажити (Адмін)
+        </button>
+    </div>
+    <p class="text-muted">Повний архів усіх аудіофайлів системи. Ви можете керувати ними тут.</p>
+    <hr />
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Назва треку</th>
+                        <th>Тривалість</th>
+                        <th>Автор (DJ)</th>
+                        <th>HLS URL</th>
+                        <th class="text-end">Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var track in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold">@track.Title</td>
+                            <td>@track.Duration.ToString(@"mm\:ss")</td>
+                            <td>
+                                @if (track.UploadedBy != null)
+                                {
+                                    <span class="badge bg-info text-dark">@track.UploadedBy.Username</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <small class="text-muted" style="font-size: 0.75em">@track.HlsUrl</small>
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="DeleteTrackFull" method="post" onsubmit="return confirm('Видалити цей трек НАЗАВЖДИ? Він зникне з усіх плейлистів.');">
+                                    <input type="hidden" name="trackId" value="@track.TrackId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Видалити назавжди">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="adminUploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Завантажити в Архів</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="UploadToLibrary" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Файл:</label>
+                        <input type="file" name="trackFile" class="form-control" accept=".mp3" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Назва:</label>
+                        <input type="text" name="title" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-success">Завантажити</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

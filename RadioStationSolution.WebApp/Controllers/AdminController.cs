@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using OnlineRadioStation.Services;
 using System;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using OnlineRadioStation.Domain;
 using OnlineRadioStation.Data;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using System.IO;
 
 namespace RadioStationSolution.WebApp.Controllers
 {
@@ -120,11 +119,9 @@ namespace RadioStationSolution.WebApp.Controllers
             var allTracks = await _trackRepo.GetAll().ToListAsync();
             var allStreams = await _streamRepo.GetAll().ToListAsync();
             var allQueueItems = await _queueRepo.GetAll().ToListAsync();
-
             foreach (var track in allTracks) track.Accept(visitor);
             foreach (var stream in allStreams) stream.Accept(visitor);
             foreach (var item in allQueueItems) item.Accept(visitor);
-
             return View(visitor);
         }
 
@@ -132,7 +129,6 @@ namespace RadioStationSolution.WebApp.Controllers
         public async Task<IActionResult> CleanOrphanFiles()
         {
             var allTracks = await _trackRepo.GetAll().ToListAsync();
-
             var validFolderNames = allTracks
                 .Where(t => !string.IsNullOrEmpty(t.HlsUrl))
                 .Select(t =>
@@ -142,14 +138,11 @@ namespace RadioStationSolution.WebApp.Controllers
                 })
                 .Where(n => n != null)
                 .ToHashSet();
-
             var streamsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "streams");
             if (!Directory.Exists(streamsPath))
                 return RedirectToAction("ShowStats");
-
             var physicalDirectories = Directory.GetDirectories(streamsPath);
             int deletedCount = 0;
-
             foreach (var dirPath in physicalDirectories)
             {
                 var dirName = Path.GetFileName(dirPath);
@@ -166,7 +159,6 @@ namespace RadioStationSolution.WebApp.Controllers
                     }
                 }
             }
-
             TempData["Message"] = $"Очищення завершено. Видалено папок-сиріт: {deletedCount}";
             return RedirectToAction("ShowStats");
         }
@@ -187,7 +179,6 @@ namespace RadioStationSolution.WebApp.Controllers
                 };
             })
             .ThenBy(u => u.Username);
-
             return View(sortedUsers);
         }
 
@@ -196,19 +187,25 @@ namespace RadioStationSolution.WebApp.Controllers
         {
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
-
             if (user.Role == "Admin")
             {
                 return Content("Не можна редагувати Адміна.");
             }
-
             var allowedRoles = new[] { "User", "Dj", "Banned" };
             ViewBag.Roles = new SelectList(allowedRoles, user.Role);
-
             var stations = await _stationService.GetAllStationsAsync();
             ViewBag.Stations = new SelectList(stations, "StationId", "StationName", user.AssignedStationId);
-
             return View(user);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Library()
+        {
+            var allTracks = await _trackRepo.GetAll()
+                .Include(t => t.UploadedBy)
+                .OrderByDescending(t => t.Title)
+                .ToListAsync();
+            return View(allTracks);
         }
 
         [HttpPost]
@@ -240,6 +237,61 @@ namespace RadioStationSolution.WebApp.Controllers
                 TempData["Error"] = $"Помилка видалення: {ex.Message}";
             }
             return RedirectToAction(nameof(ManageUsers));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadToLibrary(IFormFile trackFile, string title)
+        {
+            if (trackFile == null || trackFile.Length == 0) return RedirectToAction("Library");
+            var adminUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Admin");
+            if (adminUser == null) return Content("Адміністратора не знайдено.");
+
+            var tempFileName = $"{Guid.NewGuid()}{Path.GetExtension(trackFile.FileName)}";
+            var tempFilePath = Path.Combine(Path.GetTempPath(), tempFileName);
+            await using (var stream = new FileStream(tempFilePath, FileMode.Create))
+            {
+                await trackFile.CopyToAsync(stream);
+            }
+
+            IAudioConverter adapter = new FFmpegAdapter();
+            StreamFactory factory = new BitrateStreamFactory(adapter);
+            IAudioProcessor manualFacade = new AudioProcessingFacade(
+                adapter,
+                _trackRepo,
+                _queueRepo,
+                factory
+            );
+
+            try
+            {
+                await manualFacade.UploadToLibraryAsync(tempFilePath, title, adminUser.UserId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Admin Upload Error: {ex.Message}");
+            }
+            finally
+            {
+                if (System.IO.File.Exists(tempFilePath)) System.IO.File.Delete(tempFilePath);
+            }
+            return RedirectToAction(nameof(Library));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTrackFull(Guid trackId)
+        {
+            var relatedQueueItems = await _queueRepo.GetAll()
+                .Where(q => q.TrackId == trackId)
+                .ToListAsync();
+            foreach (var item in relatedQueueItems)
+            {
+                await _queueRepo.DeleteEntity(item.QueueId);
+            }
+            await _trackRepo.DeleteEntity(trackId);
+            await _trackRepo.SaveChangesAsync();
+            return RedirectToAction(nameof(Library));
         }
     }
 }

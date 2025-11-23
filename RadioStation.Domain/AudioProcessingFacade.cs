@@ -24,12 +24,10 @@ namespace OnlineRadioStation.Domain
             _streamFactory = streamFactory;
         }
 
-        public async Task ProcessNewTrackAsync(string tempFilePath, string title, Guid stationId, Guid djId)
+        private async Task<string> ConvertFileInternal(string tempFilePath)
         {
-            Console.WriteLine($"[Facade] Починаю МУЛЬТИ-БІТРЕЙТ обробку: {title}");
-
             int[] targetBitrates = { 64, 92, 128, 196, 224 };
-            var masterPlaylistContent = "#EXTM3U\n";
+            var masterPlaylistContent = "#EXTM3U\n#EXT-X-VERSION:3\n";
             var baseFileName = Path.GetFileNameWithoutExtension(tempFilePath);
             var baseFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "streams", baseFileName);
             Directory.CreateDirectory(baseFolder);
@@ -37,17 +35,19 @@ namespace OnlineRadioStation.Domain
             foreach (var bitrate in targetBitrates)
             {
                 var streamProduct = _streamFactory.Create(bitrate);
-                var subPlaylistUrl = await streamProduct.CreateStreamAsync(tempFilePath, bitrate.ToString());
-
+                await streamProduct.CreateStreamAsync(tempFilePath, bitrate.ToString());
                 masterPlaylistContent += $"#EXT-X-STREAM-INF:BANDWIDTH={bitrate * 1000},CODECS=\"mp4a.40.2\"\n";
                 masterPlaylistContent += $"{bitrate}/index.m3u8\n";
             }
 
             var masterPath = Path.Combine(baseFolder, "master.m3u8");
-            await File.WriteAllTextAsync(masterPath, masterPlaylistContent.Trim());
+            await File.WriteAllTextAsync(masterPath, masterPlaylistContent);
+            return $"/streams/{baseFileName}/master.m3u8";
+        }
 
-            var finalHlsUrl = $"/streams/{baseFileName}/master.m3u8";
-
+        public async Task ProcessNewTrackAsync(string tempFilePath, string title, Guid stationId, Guid djId)
+        {
+            var finalHlsUrl = await ConvertFileInternal(tempFilePath);
             var realDuration = await _converter.GetTrackDurationAsync(tempFilePath);
 
             var newTrack = new Track
@@ -61,9 +61,7 @@ namespace OnlineRadioStation.Domain
 
             _trackRepository.AddEntity(newTrack);
 
-            var nextPosition = _queueRepository.GetAll()
-                .Count(q => q.StationId == stationId) + 1;
-
+            var nextPosition = _queueRepository.GetAll().Count(q => q.StationId == stationId) + 1;
             var newQueueEntry = new PlaybackQueue
             {
                 QueueId = Guid.NewGuid(),
@@ -74,10 +72,25 @@ namespace OnlineRadioStation.Domain
             };
 
             _queueRepository.AddEntity(newQueueEntry);
-
             await _trackRepository.SaveChangesAsync();
+        }
 
-            Console.WriteLine($"[Facade] Обробку треку '{title}' завершено. Тривалість: {realDuration}, Майстер-плейлист: {finalHlsUrl}");
+        public async Task UploadToLibraryAsync(string tempFilePath, string title, Guid adminId)
+        {
+            var finalHlsUrl = await ConvertFileInternal(tempFilePath);
+            var realDuration = await _converter.GetTrackDurationAsync(tempFilePath);
+
+            var newTrack = new Track
+            {
+                TrackId = Guid.NewGuid(),
+                Title = title,
+                Duration = realDuration,
+                UploadedById = adminId,
+                HlsUrl = finalHlsUrl
+            };
+
+            _trackRepository.AddEntity(newTrack);
+            await _trackRepository.SaveChangesAsync();
         }
     }
 }
