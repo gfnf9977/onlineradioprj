@@ -16,5 +16,8 @@ namespace OnlineRadioStation.Services
         Task UpdateUserRoleAndStationAsync(Guid id, string newRole, Guid? stationId);
         Task<bool> ToggleSavedStationAsync(Guid userId, Guid stationId); 
         Task<IEnumerable<Guid>> GetSavedStationIdsAsync(Guid userId); 
+        Task<int> ToggleTrackRatingAsync(Guid userId, Guid trackId, bool isLikeBtnPressed);
+        Task<int> GetUserTrackRatingAsync(Guid userId, Guid trackId);
+        Task<Dictionary<Guid, int>> GetUserTrackRatingsAsync(Guid userId);
     }
 }

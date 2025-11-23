@@ -12,13 +12,16 @@ namespace OnlineRadioStation.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly ISavedStationRepository _savedRepo;
+        private readonly ILikeDislikeRepository _likeRepo;
 
         public UserService(
             IUserRepository userRepository,
-            ISavedStationRepository savedRepo)
+            ISavedStationRepository savedRepo,
+            ILikeDislikeRepository likeRepo)
         {
             _userRepository = userRepository;
             _savedRepo = savedRepo;
+            _likeRepo = likeRepo;
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -127,6 +130,58 @@ namespace OnlineRadioStation.Services
                 .Where(s => s.UserId == userId)
                 .Select(s => s.StationId)
                 .ToListAsync();
+        }
+
+        public async Task<int> ToggleTrackRatingAsync(Guid userId, Guid trackId, bool isLikeBtnPressed)
+        {
+            var existing = await _likeRepo.GetAll()
+                .FirstOrDefaultAsync(l => l.UserId == userId && l.TrackId == trackId);
+            if (existing != null)
+            {
+                if (existing.IsLike == isLikeBtnPressed)
+                {
+                    await _likeRepo.DeleteEntity(existing.LikeId);
+                    await _likeRepo.SaveChangesAsync();
+                    return 0;
+                }
+                else
+                {
+                    existing.IsLike = isLikeBtnPressed;
+                    _likeRepo.UpdateEntity(existing);
+                    await _likeRepo.SaveChangesAsync();
+                    return isLikeBtnPressed ? 1 : -1;
+                }
+            }
+            else
+            {
+                var newRating = new LikeDislike
+                {
+                    LikeId = Guid.NewGuid(),
+                    UserId = userId,
+                    TrackId = trackId,
+                    IsLike = isLikeBtnPressed,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _likeRepo.AddEntity(newRating);
+                await _likeRepo.SaveChangesAsync();
+                return isLikeBtnPressed ? 1 : -1;
+            }
+        }
+
+        public async Task<int> GetUserTrackRatingAsync(Guid userId, Guid trackId)
+        {
+            var rating = await _likeRepo.GetAll()
+                .FirstOrDefaultAsync(l => l.UserId == userId && l.TrackId == trackId);
+
+            if (rating == null) return 0;
+            return rating.IsLike ? 1 : -1;
+        }
+
+        public async Task<Dictionary<Guid, int>> GetUserTrackRatingsAsync(Guid userId)
+        {
+            return await _likeRepo.GetAll()
+                .Where(l => l.UserId == userId)
+                .ToDictionaryAsync(l => l.TrackId, l => l.IsLike ? 1 : -1);
         }
     }
 }
