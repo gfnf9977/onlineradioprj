@@ -1,0 +1,95 @@
+@model IEnumerable<OnlineRadioStation.Domain.PlaybackQueue>
+
+@{
+    ViewData["Title"] = "Мій плейлист";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1>🎼 Мій плейлист</h1>
+            <p class="text-muted mb-0">Поточна черга відтворення на станції.</p>
+        </div>
+        
+        @* === КНОПКА ВІДКРИТТЯ МОДАЛКИ === *@
+        <button type="button" class="btn btn-success btn-lg shadow" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="bi bi-cloud-upload"></i> Завантажити новий трек
+        </button>
+    </div>
+    <hr />
+
+    @* === ТАБЛИЦЯ ПЛЕЙЛИСТА (Як і було) === *@
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning">Плейлист порожній. Додайте музику!</div>
+    }
+    else
+    {
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Назва треку</th>
+                    <th>Тривалість</th>
+                    <th class="text-end">Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int rowNum = 1; }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@(rowNum++)</td>
+                        <td>@item.Track.Title</td>
+                        <td>@item.Track.Duration.ToString(@"mm\:ss")</td>
+                        <td class="text-end">
+                            <form asp-action="RemoveFromQueue" method="post">
+                                <input type="hidden" name="queueId" value="@item.QueueId" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Прибрати з ефіру">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@* ========================================== *@
+@* === МОДАЛЬНЕ ВІКНО ЗАВАНТАЖЕННЯ (MODAL) === *@
+@* ========================================== *@
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Завантажити трек</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            @* ФОРМА ПЕРЕНЕСЕНА СЮДИ *@
+            <form asp-controller="Dj" asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label">Оберіть MP3:</label>
+                        <input type="file" name="trackFile" class="form-control" accept=".mp3" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Назва треку:</label>
+                        <input type="text" name="title" class="form-control" placeholder="Artist - Song" required />
+                    </div>
+                    
+                    @* Станцію контролер визначає сам, вибір бітрейту ми прибрали для "True HLS" *@
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-primary">Завантажити</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

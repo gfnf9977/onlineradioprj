@@ -43,6 +43,8 @@ namespace RadioStationSolution.WebApp.Controllers
                 var user = await _userService.AuthenticateUserAsync(username, password);
                 if (user != null)
                 {
+                    HttpContext.Session.SetString("CurrentUserId", user.UserId.ToString());
+
                     return user.Role.ToLower() switch
                     {
                         "admin" => RedirectToAction("AdminDashboard"),
@@ -62,6 +64,7 @@ namespace RadioStationSolution.WebApp.Controllers
         }
 
         public IActionResult AdminDashboard() => View();
+
         public IActionResult DjDashboard() => View();
 
         public async Task<IActionResult> UserDashboard()

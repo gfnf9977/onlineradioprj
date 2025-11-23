@@ -20,6 +20,7 @@ builder.Services.AddScoped<IPlaybackQueueRepository, PlaybackQueueRepository>();
 builder.Services.AddScoped<IDjStreamRepository, DjStreamRepository>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSession();
 
 //builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
 //builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
@@ -49,7 +50,7 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = provider 
 });
 // --------------------------------
-
+app.UseSession();
 app.UseRouting();
 
 app.UseAuthorization();

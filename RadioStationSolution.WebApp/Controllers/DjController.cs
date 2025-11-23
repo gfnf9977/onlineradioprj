@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OnlineRadioStation.Domain;
 using OnlineRadioStation.Services;
 using OnlineRadioStation.Data;
@@ -28,10 +29,25 @@ namespace RadioStationSolution.WebApp.Controllers
             _queueRepo = queueRepo;
         }
 
+        private async Task<User?> GetCurrentUserAsync()
+        {
+            var userIdStr = HttpContext.Session.GetString("CurrentUserId");
+            if (string.IsNullOrEmpty(userIdStr))
+            {
+                return null;
+            }
+
+            if (Guid.TryParse(userIdStr, out Guid userId))
+            {
+                return await _userService.GetUserByIdAsync(userId);
+            }
+            return null;
+        }
+
         [HttpGet]
         public async Task<IActionResult> Upload()
         {
-            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            var djUser = await GetCurrentUserAsync();
             if (djUser == null)
                 return Content("У системі немає Діджеїв.");
             if (djUser.AssignedStationId == null)
@@ -51,7 +67,7 @@ namespace RadioStationSolution.WebApp.Controllers
             if (string.IsNullOrEmpty(title))
                 ModelState.AddModelError("title", "Будь ласка, введіть назву треку.");
 
-            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId == null)
                 return Content("Помилка доступу.");
 
@@ -95,13 +111,13 @@ namespace RadioStationSolution.WebApp.Controllers
                     System.IO.File.Delete(tempFilePath);
             }
 
-            return RedirectToAction("Listen", "Home", new { id = djUser.AssignedStationId.Value });
+            return RedirectToAction(nameof(ManagePlaylist));
         }
 
         [HttpGet]
         public async Task<IActionResult> ManageStreams()
         {
-            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            var djUser = await GetCurrentUserAsync();
             if (djUser == null)
                 return Content("Діджея не знайдено.");
 
@@ -123,7 +139,7 @@ namespace RadioStationSolution.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStream(string action)
         {
-            var djUser = (await _userService.GetAllUsersAsync()).FirstOrDefault(u => u.Role == "Dj");
+            var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId == null)
                 return RedirectToAction("ManageStreams");
 
@@ -144,6 +160,74 @@ namespace RadioStationSolution.WebApp.Controllers
             }
 
             return RedirectToAction(nameof(ManageStreams));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ManagePlaylist()
+        {
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null || djUser.AssignedStationId == null)
+                return Content("Помилка доступу.");
+
+            var station = await _stationService.GetStationWithPlaylistAsync(djUser.AssignedStationId.Value);
+            var playlist = station.Playbacks.OrderBy(p => p.QueuePosition).ToList();
+
+            return View(playlist);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveFromQueue(Guid queueId)
+        {
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null)
+                return RedirectToAction(nameof(ManagePlaylist));
+
+            try
+            {
+                await _queueRepo.DeleteEntity(queueId);
+                await _queueRepo.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error removing from queue: {ex.Message}");
+            }
+
+            return RedirectToAction(nameof(ManagePlaylist));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Library()
+        {
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null)
+                return RedirectToAction("Login", "Home");
+
+            var allTracks = await _trackRepo.GetAll()
+                .OrderByDescending(t => t.Title)
+                .ToListAsync();
+
+            return View(allTracks);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditTrackTitle(Guid trackId, string newTitle)
+        {
+            if (string.IsNullOrWhiteSpace(newTitle))
+            {
+                return RedirectToAction(nameof(Library));
+            }
+
+            var track = await _trackRepo.GetById(trackId);
+            if (track != null)
+            {
+                track.Title = newTitle;
+                _trackRepo.UpdateEntity(track);
+                await _trackRepo.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Library));
         }
     }
 }

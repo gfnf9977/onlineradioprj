@@ -10,20 +10,26 @@
 <h1>Панель DJ</h1>
 <p>Ласкаво просимо, DJ!</p>
 
+@* ... *@
 <div class="dashboard-grid">
+    @* КАРТКА 1: ПУЛЬТ ЕФІРУ *@
     <div class="dashboard-card">
-        <h3>Керування стрімами</h3>
-        <p>Запуск та зупинка стрімів, керування чергою відтворення.</p>
-        <a asp-controller="Dj" asp-action="Upload" class="btn btn-success">Завантажити новий трек</a>
+        <h3>Управління стрімами</h3> 
+        <p>Запуск та зупинка ефірів, таймер зміни.</p>
+        <a asp-controller="Dj" asp-action="ManageStreams" class="btn btn-success">Ефірний пульт</a>
     </div>
+
+    @* КАРТКА 2: ПЛЕЙЛИСТ + ЗАВАНТАЖЕННЯ (ОБ'ЄДНАНО) *@
     <div class="dashboard-card">
-        <h3>Керування треками</h3>
-        <p>Завантаження нових треків, редагування інформації.</p>
-        <a href="#" class="btn btn-primary">Перейти</a>
+        <h3>Плейлист & Завантаження</h3>
+        <p>Керування чергою відтворення та додавання нових треків.</p>
+        <a asp-controller="Dj" asp-action="ManagePlaylist" class="btn btn-primary">Редагувати плейлист</a>
     </div>
+
+    @* КАРТКА 3: БІБЛІОТЕКА (НОВА) *@
     <div class="dashboard-card">
-        <h3>Управління стрімами</h3>
-        <p>Запуск та зупинка ефірів, історія активності.</p>
-        <a asp-controller="Dj" asp-action="ManageStreams" class="btn btn-primary">Перейти до пульта</a>
+        <h3>Бібліотека</h3>
+        <p>Перегляд архіву всіх треків, що є в системі.</p>
+        <a asp-controller="Dj" asp-action="Library" class="btn btn-outline-dark">Відкрити архів</a>
     </div>
 </div>
