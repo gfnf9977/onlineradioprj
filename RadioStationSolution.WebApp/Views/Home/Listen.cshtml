@@ -4,37 +4,33 @@
 @inject OnlineRadioStation.Services.IUserService _userService
 @{
     ViewData["Title"] = $"Ефір: {Model.StationName}";
-    var iterator = Model.CreateIterator();
-    iterator.First();
     var playlistForJs = new List<object>();
     bool isOffline = ViewBag.IsOffline ?? true;
     var userRatings = ViewBag.UserRatings as Dictionary<Guid, int> ?? new Dictionary<Guid, int>();
 
     if (!isOffline)
     {
+        var playbacks = Model.Playbacks.OrderBy(p => p.QueuePosition).ToList();
         int position = 1;
-        while (!iterator.IsDone())
+        foreach (var item in playbacks)
         {
-            var track = iterator.Current();
+            if (!item.IsActive) continue;
+            var track = item.Track;
             if (!string.IsNullOrEmpty(track.HlsUrl))
             {
                 int rating = userRatings.ContainsKey(track.TrackId) ? userRatings[track.TrackId] : 0;
-
-                // Отримуємо лічильники лайків/дизлайків
                 var votes = _userService.GetTrackVotesAsync(track.TrackId).Result;
-
                 playlistForJs.Add(new {
                     trackId = track.TrackId.ToString(),
                     title = track.Title,
                     url = track.HlsUrl,
                     id = position,
                     userRating = rating,
-                    likesCount = votes.Likes,       // Додали лічильник лайків
-                    dislikesCount = votes.Dislikes // Додали лічильник дзлайків
+                    likesCount = votes.Likes,
+                    dislikesCount = votes.Dislikes
                 });
             }
             position++;
-            iterator.Next();
         }
     }
 }
@@ -68,7 +64,6 @@
                 <div class="card-body text-center">
                     <h3 id="currentTrackName" class="fw-bold text-dark mb-3">Завантаження...</h3>
                     <div class="d-flex justify-content-center align-items-center gap-4 mb-4">
-                        <!-- Оновлені кнопки з лічильниками -->
                         <button id="btnDislike" class="btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center" style="width: 70px; height: 70px;" onclick="rateTrack(false)">
                             <i id="iconDislike" class="bi bi-hand-thumbs-down fs-4"></i>
                             <span id="countDislike" class="small fw-bold" style="font-size: 0.7rem;"></span>
@@ -105,17 +100,13 @@
         var trackLabel = document.getElementById('currentTrackName');
         var currentIndex = 0;
         var hls = null;
-
         function initTrack(index, startTime = 0) {
             if (index >= playlist.length) return;
             currentIndex = index;
             var track = playlist[index];
             trackLabel.innerText = track.title;
             document.getElementById('btnLike').dataset.trackId = track.trackId;
-
-            // Оновлюємо кнопки з лічильниками
             updateButtons(track.userRating, track.likesCount, track.dislikesCount);
-
             var streamUrl = track.url;
             if (Hls.isSupported()) {
                 if(hls) hls.destroy();
@@ -130,19 +121,16 @@
                 if (startTime > 0) audio.currentTime = startTime;
             }
         }
-
         function playRadio() {
             overlay.style.display = 'none';
             container.style.display = 'block';
             audio.play().catch(e => console.error(e));
         }
-
         window.toggleMute = function() {
             audio.muted = !audio.muted;
             var icon = document.getElementById('muteIcon');
             icon.className = audio.muted ? "bi bi-volume-mute-fill fs-5" : "bi bi-volume-up-fill fs-5";
         };
-
         window.rateTrack = async function(isLike) {
             var trackId = document.getElementById('btnLike').dataset.trackId;
             var token = document.querySelector('#csrf-form input').value;
@@ -154,19 +142,13 @@
                 if (response.status === 401) { alert("Увійдіть, щоб голосувати!"); return; }
                 if (response.ok) {
                     let data = await response.json();
-
-                    // Оновлюємо UI з новими даними від сервера
                     updateButtons(data.status, data.likes, data.dislikes);
-
-                    // Оновлюємо пам'ять
                     playlist[currentIndex].userRating = data.status;
                     playlist[currentIndex].likesCount = data.likes;
                     playlist[currentIndex].dislikesCount = data.dislikes;
                 }
             } catch (e) { console.error(e); }
         };
-
-        // Оновлена функція updateButtons з підтримкою лічильників
         function updateButtons(status, likes, dislikes) {
             var btnLike = document.getElementById('btnLike');
             var btnDislike = document.getElementById('btnDislike');
@@ -174,29 +156,22 @@
             var iconDislike = document.getElementById('iconDislike');
             var countLike = document.getElementById('countLike');
             var countDislike = document.getElementById('countDislike');
-
-            // Скидаємо стилі
             btnLike.className = "btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center";
             btnDislike.className = "btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center";
             iconLike.className = "bi bi-hand-thumbs-up fs-4";
             iconDislike.className = "bi bi-hand-thumbs-down fs-4";
-
-            // Фарбуємо активну кнопку
-            if (status === 1) { // Like
+            if (status === 1) {
                 btnLike.classList.remove('btn-outline-secondary');
                 btnLike.classList.add('btn-success');
                 iconLike.className = "bi bi-hand-thumbs-up-fill fs-4";
-            } else if (status === -1) { // Dislike
+            } else if (status === -1) {
                 btnDislike.classList.remove('btn-outline-secondary');
                 btnDislike.classList.add('btn-danger');
                 iconDislike.className = "bi bi-hand-thumbs-down-fill fs-4";
             }
-
-            // Оновлюємо цифри (якщо 0 - порожній рядок)
             countLike.innerText = (likes > 0) ? likes : "";
             countDislike.innerText = (dislikes > 0) ? dislikes : "";
         }
-
         var startIndex = 0;
         if (startTrackId) {
             var foundIndex = playlist.findIndex(t => t.trackId === startTrackId);

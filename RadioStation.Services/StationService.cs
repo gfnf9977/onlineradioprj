@@ -98,28 +98,40 @@ namespace OnlineRadioStation.Services
                 return (null, TimeSpan.Zero);
             }
 
-            var playlist = station.Playbacks
+            var originalPlaylist = station.Playbacks
+                .Where(p => p.IsActive)
                 .OrderBy(p => p.QueuePosition)
                 .Select(p => p.Track)
                 .ToList();
 
-            if (!playlist.Any())
+            if (!originalPlaylist.Any())
             {
                 return (null, TimeSpan.Zero);
             }
 
-            long totalTicks = playlist.Sum(t => t.Duration.Ticks);
-            if (totalTicks == 0)
+            IList<Track> currentPlaylist;
+
+            if (activeStream.IsRandom)
             {
-                return (playlist.FirstOrDefault(), TimeSpan.Zero);
+                var random = new Random(activeStream.StreamId.GetHashCode());
+                currentPlaylist = originalPlaylist.OrderBy(x => random.Next()).ToList();
+            }
+            else
+            {
+                currentPlaylist = originalPlaylist;
             }
 
-            var totalDuration = TimeSpan.FromTicks(totalTicks);
+            long totalTicks = currentPlaylist.Sum(t => t.Duration.Ticks);
+            if (totalTicks == 0)
+            {
+                return (currentPlaylist.First(), TimeSpan.Zero);
+            }
+
             var realTimeElapsed = DateTime.UtcNow - activeStream.StartTime;
             long currentLoopTicks = realTimeElapsed.Ticks % totalTicks;
             var loopTimeElapsed = TimeSpan.FromTicks(currentLoopTicks);
 
-            foreach (var track in playlist)
+            foreach (var track in currentPlaylist)
             {
                 if (loopTimeElapsed < track.Duration)
                 {
@@ -128,7 +140,7 @@ namespace OnlineRadioStation.Services
                 loopTimeElapsed -= track.Duration;
             }
 
-            return (playlist.FirstOrDefault(), TimeSpan.Zero);
+            return (currentPlaylist.First(), TimeSpan.Zero);
         }
 
         public async Task<IEnumerable<DjStream>> GetStreamsByDjAsync(Guid djId)
@@ -178,6 +190,12 @@ namespace OnlineRadioStation.Services
             _streamRepository.UpdateEntity(activeStream);
             await _streamRepository.SaveChangesAsync();
         }
+
+        public async Task UpdateStreamAsync(DjStream stream)
+        {
+            _streamRepository.UpdateEntity(stream);
+            await _streamRepository.SaveChangesAsync();
+        }
+        
     }
 }
- 

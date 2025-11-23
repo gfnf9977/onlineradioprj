@@ -115,6 +115,16 @@ namespace RadioStationSolution.WebApp.Controllers
                 return Content("Діджея не знайдено.");
             var history = await _stationService.GetStreamsByDjAsync(djUser.UserId);
             var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+            var playlist = new List<PlaybackQueue>();
+            if (djUser.AssignedStationId != null)
+            {
+                var station = await _stationService.GetStationWithPlaylistAsync(djUser.AssignedStationId.Value);
+                if (station != null)
+                {
+                    playlist = station.Playbacks.OrderBy(p => p.QueuePosition).ToList();
+                }
+            }
+            ViewBag.CurrentPlaylist = playlist;
             ViewBag.IsLive = (activeStream != null);
             ViewBag.StationId = djUser.AssignedStationId;
             if (activeStream != null)
@@ -271,15 +281,12 @@ namespace RadioStationSolution.WebApp.Controllers
             var currentItem = await _queueRepo.GetById(queueId);
             if (currentItem == null)
                 return RedirectToAction(nameof(ManagePlaylist));
-
             var djUser = await GetCurrentUserAsync();
             if (djUser == null || djUser.AssignedStationId != currentItem.StationId)
                 return Content("Помилка доступу.");
-
             PlaybackQueue? targetItem = null;
             var stationQueue = _queueRepo.GetAll()
                 .Where(q => q.StationId == currentItem.StationId);
-
             if (direction == "up")
             {
                 targetItem = await stationQueue
@@ -294,7 +301,6 @@ namespace RadioStationSolution.WebApp.Controllers
                     .OrderBy(q => q.QueuePosition)
                     .FirstOrDefaultAsync();
             }
-
             if (targetItem != null)
             {
                 int tempPos = currentItem.QueuePosition;
@@ -305,6 +311,65 @@ namespace RadioStationSolution.WebApp.Controllers
                 await _queueRepo.SaveChangesAsync();
             }
             return RedirectToAction(nameof(ManagePlaylist));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeStreamQueuePosition(Guid queueId, string direction)
+        {
+            var currentItem = await _queueRepo.GetById(queueId);
+            if (currentItem == null)
+                return RedirectToAction(nameof(ManageStreams));
+
+            var stationQueue = _queueRepo.GetAll().Where(q => q.StationId == currentItem.StationId);
+            PlaybackQueue? targetItem = null;
+
+            if (direction == "up")
+                targetItem = await stationQueue.Where(q => q.QueuePosition < currentItem.QueuePosition).OrderByDescending(q => q.QueuePosition).FirstOrDefaultAsync();
+            else
+                targetItem = await stationQueue.Where(q => q.QueuePosition > currentItem.QueuePosition).OrderBy(q => q.QueuePosition).FirstOrDefaultAsync();
+
+            if (targetItem != null)
+            {
+                (currentItem.QueuePosition, targetItem.QueuePosition) = (targetItem.QueuePosition, currentItem.QueuePosition);
+                _queueRepo.UpdateEntity(currentItem);
+                _queueRepo.UpdateEntity(targetItem);
+                await _queueRepo.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(ManageStreams));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleTrackActive(Guid queueId)
+        {
+            var item = await _queueRepo.GetById(queueId);
+            if (item != null)
+            {
+                item.IsActive = !item.IsActive;
+                _queueRepo.UpdateEntity(item);
+                await _queueRepo.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(ManageStreams));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleRandomMode()
+        {
+            var djUser = await GetCurrentUserAsync();
+            if (djUser == null)
+                return RedirectToAction("Login", "Home");
+
+            var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
+
+            if (activeStream != null)
+            {
+                activeStream.IsRandom = !activeStream.IsRandom;
+                await _stationService.UpdateStreamAsync(activeStream);
+            }
+
+            return RedirectToAction(nameof(ManageStreams));
         }
     }
 }
