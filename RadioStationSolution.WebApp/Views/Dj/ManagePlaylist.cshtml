@@ -26,7 +26,6 @@
                     <th>#</th>
                     <th>Назва треку</th>
                     <th>Тривалість</th>
-                    <th>Сортування</th>
                     <th class="text-end">Дії</th>
                 </tr>
             </thead>
@@ -36,37 +35,18 @@
                 {
                     <tr>
                         <td class="fw-bold">@(rowNum++)</td>
-                        <td>@item.Track.Title</td>
-                        <td>@item.Track.Duration.ToString(@"mm\:ss")</td>
                         <td>
-                            <div class="btn-group-vertical btn-group-sm">
-                                <form asp-action="ChangeTrackPosition" method="post">
-                                    <input type="hidden" name="queueId" value="@item.QueueId" />
-                                    <input type="hidden" name="direction" value="up" />
-                                    @if (item != Model.First())
-                                    {
-                                        <button type="submit" class="btn btn-light border py-0" title="Підняти">
-                                            <i class="bi bi-caret-up-fill text-primary"></i>
-                                        </button>
-                                    }
-                                </form>
-                                <form asp-action="ChangeTrackPosition" method="post">
-                                    <input type="hidden" name="queueId" value="@item.QueueId" />
-                                    <input type="hidden" name="direction" value="down" />
-                                    @if (item != Model.Last())
-                                    {
-                                        <button type="submit" class="btn btn-light border py-0" title="Опустити">
-                                            <i class="bi bi-caret-down-fill text-primary"></i>
-                                        </button>
-                                    }
-                                </form>
-                            </div>
+                            @item.Track.Title
+                            <br/>
+                            <small class="text-muted" style="font-size: 0.8em">@item.TrackId</small>
                         </td>
+                        <td>@item.Track.Duration.ToString(@"mm\:ss")</td>
                         <td class="text-end">
-                            <form asp-action="RemoveFromQueue" method="post">
+                            <form asp-action="RemoveFromQueue" method="post" onsubmit="return confirm('Прибрати цей трек з ефіру?');">
                                 <input type="hidden" name="queueId" value="@item.QueueId" />
-                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Прибрати з ефіру">
-                                    <i class="bi bi-x-lg"></i>
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-x-lg"></i> Прибрати
                                 </button>
                             </form>
                         </td>
