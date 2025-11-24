@@ -90,10 +90,11 @@ namespace RadioStationSolution.WebApp.Controllers
             var station = await _stationService.GetStationWithPlaylistAsync(id);
             if (station == null) return NotFound();
             var (currentTrack, offset) = await _stationService.GetCurrentRadioStateAsync(id);
-            bool isOffline = (currentTrack == null);
+            var orderedTracks = await _stationService.GetCurrentPlaylistOrderAsync(id);
+            ViewBag.OrderedPlaylist = orderedTracks;
             ViewBag.StartTrackId = currentTrack?.TrackId;
             ViewBag.StartOffset = offset.TotalSeconds;
-            ViewBag.IsOffline = isOffline;
+            ViewBag.IsOffline = (currentTrack == null);
             var userIdStr = HttpContext.Session.GetString("CurrentUserId");
             if (Guid.TryParse(userIdStr, out Guid userId))
             {
@@ -175,11 +176,10 @@ namespace RadioStationSolution.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> GetRadioStatus(Guid stationId)
         {
-            var station = await _stationService.GetStationWithPlaylistAsync(stationId);
-            if (station == null) return NotFound();
             var (currentTrack, offset) = await _stationService.GetCurrentRadioStateAsync(stationId);
             bool isOffline = (currentTrack == null);
             var playlistForJs = new List<object>();
+
             if (!isOffline)
             {
                 var userIdStr = HttpContext.Session.GetString("CurrentUserId");
@@ -188,21 +188,18 @@ namespace RadioStationSolution.WebApp.Controllers
                 {
                     userRatings = await _userService.GetUserTrackRatingsAsync(userId);
                 }
-                var activeTracks = station.Playbacks
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.QueuePosition)
-                    .ToList();
+                var activeTracks = await _stationService.GetCurrentPlaylistOrderAsync(stationId);
                 int position = 1;
                 foreach (var item in activeTracks)
                 {
-                    if (!string.IsNullOrEmpty(item.Track.HlsUrl))
+                    if (!string.IsNullOrEmpty(item.HlsUrl))
                     {
                         int rating = userRatings.ContainsKey(item.TrackId) ? userRatings[item.TrackId] : 0;
                         var votes = _userService.GetTrackVotesAsync(item.TrackId).Result;
                         playlistForJs.Add(new {
                             trackId = item.TrackId.ToString(),
-                            title = item.Track.Title,
-                            url = item.Track.HlsUrl,
+                            title = item.Title,
+                            url = item.HlsUrl,
                             id = position,
                             userRating = rating,
                             likesCount = votes.Likes,

@@ -65,6 +65,34 @@
         </div>
     </div>
 
+    @if (isLive)
+    {
+        <div class="card border-primary mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span>📡 Студійний монітор (Те, що чують слухачі)</span>
+                <span class="badge bg-light text-dark" id="monitorStatus">Підключення...</span>
+            </div>
+            <div class="card-body d-flex align-items-center gap-3">
+                
+                @* === ПЛЕЄР ПРИБРАНО, ЗАЛИШИЛАСЯ ТІЛЬКИ ІКОНКА === *@
+                <div class="text-primary bg-light rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                    <i class="bi bi-broadcast fs-3"></i>
+                </div>
+
+                @* Інформація *@
+                <div class="flex-grow-1">
+                    <h5 class="mb-0 fw-bold" id="monitorTitle">Завантаження...</h5>
+                    <small class="text-muted">Зараз в ефірі</small>
+                </div>
+
+                @* Кнопка оновлення *@
+                <button class="btn btn-sm btn-outline-secondary" onclick="syncMonitor()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    }
+
     <hr class="my-5" />
 
     <div class="row mb-3 align-items-center">
@@ -72,10 +100,6 @@
             <h2>Поточний ефір</h2>
             <p class="text-muted">Черга відтворення на станції.</p>
         </div>
-        @if (!isLive)
-        {
-            
-        }
     </div>
 
     @if (playlist != null && playlist.Any())
@@ -98,7 +122,7 @@
                         {
                             string rowClass = item.IsActive ? "" : "table-secondary text-muted text-decoration-line-through";
 
-                            <tr class="@rowClass">
+                            <tr id="row-@item.TrackId" class="@rowClass transition-colors">
                                 <td class="fw-bold text-secondary">@(rowNum++)</td>
 
                                 <td>
@@ -220,28 +244,103 @@
 </div>
 
 @section Scripts {
+<style>
+    .transition-colors {
+        transition: background-color 0.5s ease;
+    }
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    @@keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // === 1. ТАЙМЕР ЕФІРУ ===
         var startTimeStr = '@ViewBag.StreamStartTime';
         if (startTimeStr) {
             var startTime = new Date(startTimeStr);
             var timerElement = document.getElementById('liveTimer');
+            
             function updateTimer() {
                 var now = new Date();
-                var diff = now - startTime;
+                var diff = now - startTime; // різниця в мс
+                if (diff < 0) diff = 0; // на всяк випадок
+
                 var totalSeconds = Math.floor(diff / 1000);
                 var hours = Math.floor(totalSeconds / 3600);
                 var minutes = Math.floor((totalSeconds % 3600) / 60);
                 var seconds = totalSeconds % 60;
+
                 var formattedTime =
                     (hours < 10 ? "0" + hours : hours) + ":" +
                     (minutes < 10 ? "0" + minutes : minutes) + ":" +
                     (seconds < 10 ? "0" + seconds : seconds);
-                timerElement.innerText = formattedTime;
+                
+                if(timerElement) timerElement.innerText = formattedTime;
             }
+            
             setInterval(updateTimer, 1000);
             updateTimer();
         }
+
+        // === 2. СТУДІЙНИЙ МОНІТОР (ТІЛЬКИ ТЕКСТ) ===
+        var stationId = '@ViewBag.StationId';
+        var monitorTitle = document.getElementById('monitorTitle');
+        
+        // Якщо немає елемента заголовка (наприклад, ефір офлайн), виходимо
+        if (!monitorTitle) return;
+
+        window.syncMonitor = async function() {
+            try {
+                let response = await fetch('/Home/GetRadioStatus?stationId=' + stationId);
+                if (response.ok) {
+                    let status = await response.json();
+                    
+                    // 1. Оновлюємо назву
+                    if (status.startTrackId) {
+                        // Шукаємо трек у плейлисті
+                        var currentTrack = status.playlist.find(t => t.trackId === status.startTrackId);
+                        if (currentTrack) {
+                            monitorTitle.innerText = "🎵 " + currentTrack.title;
+                            document.getElementById('monitorStatus').innerText = "Online";
+                            document.getElementById('monitorStatus').className = "badge bg-success";
+                        }
+                    } else {
+                        monitorTitle.innerText = "Очікування треку...";
+                    }
+
+                    // 2. Підсвічуємо рядок
+                    highlightRow(status.startTrackId);
+                }
+            } catch (e) {
+                console.error("Monitor error:", e);
+                document.getElementById('monitorStatus').innerText = "Offline";
+                document.getElementById('monitorStatus').className = "badge bg-secondary";
+            }
+        };
+
+        function highlightRow(activeTrackId) {
+            document.querySelectorAll('tr').forEach(row => {
+                if (!row.classList.contains('table-secondary')) {
+                    row.classList.remove('table-primary', 'fw-bold');
+                }
+            });
+            if (activeTrackId) {
+                var row = document.getElementById('row-' + activeTrackId);
+                if (row) {
+                    row.classList.add('table-primary', 'fw-bold');
+                }
+            }
+        }
+
+        // Запускаємо синхронізацію кожні 5 секунд
+        syncMonitor();
+        setInterval(syncMonitor, 5000);
     });
 </script>
 }

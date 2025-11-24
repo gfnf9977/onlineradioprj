@@ -84,41 +84,19 @@ namespace OnlineRadioStation.Services
 
         public async Task<(Track? CurrentTrack, TimeSpan Offset)> GetCurrentRadioStateAsync(Guid stationId)
         {
-            var allStreams = await _streamRepository.GetAll().ToListAsync();
-            var activeStream = allStreams.FirstOrDefault(s => s.StationId == stationId && s.EndTime == null);
+            var activeStream = await _streamRepository.GetAll()
+                .FirstOrDefaultAsync(s => s.StationId == stationId && s.EndTime == null);
 
             if (activeStream == null)
             {
                 return (null, TimeSpan.Zero);
             }
 
-            var station = await GetStationWithPlaylistAsync(stationId);
-            if (station == null || !station.Playbacks.Any())
+            var currentPlaylist = await GetCurrentPlaylistOrderAsync(stationId);
+
+            if (!currentPlaylist.Any())
             {
                 return (null, TimeSpan.Zero);
-            }
-
-            var originalPlaylist = station.Playbacks
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.QueuePosition)
-                .Select(p => p.Track)
-                .ToList();
-
-            if (!originalPlaylist.Any())
-            {
-                return (null, TimeSpan.Zero);
-            }
-
-            IList<Track> currentPlaylist;
-
-            if (activeStream.IsRandom)
-            {
-                var random = new Random(activeStream.StreamId.GetHashCode());
-                currentPlaylist = originalPlaylist.OrderBy(x => random.Next()).ToList();
-            }
-            else
-            {
-                currentPlaylist = originalPlaylist;
             }
 
             long totalTicks = currentPlaylist.Sum(t => t.Duration.Ticks);
@@ -197,6 +175,30 @@ namespace OnlineRadioStation.Services
             _streamRepository.UpdateEntity(stream);
             await _streamRepository.SaveChangesAsync();
         }
-        
+
+        public async Task<List<Track>> GetCurrentPlaylistOrderAsync(Guid stationId)
+        {
+            var activeStream = await _streamRepository.GetAll()
+                .FirstOrDefaultAsync(s => s.StationId == stationId && s.EndTime == null);
+
+            var station = await GetStationWithPlaylistAsync(stationId);
+            if (station == null) return new List<Track>();
+
+            var originalPlaylist = station.Playbacks
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.QueuePosition)
+                .Select(p => p.Track)
+                .ToList();
+
+            if (!originalPlaylist.Any()) return new List<Track>();
+
+            if (activeStream == null || !activeStream.IsRandom)
+            {
+                return originalPlaylist;
+            }
+
+            var random = new Random(activeStream.StreamId.GetHashCode());
+            return originalPlaylist.OrderBy(x => random.Next()).ToList();
+        }
     }
 }

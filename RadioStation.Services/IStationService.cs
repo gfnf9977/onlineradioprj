@@ -19,5 +19,6 @@ namespace OnlineRadioStation.Services
         Task<DjStream?> GetActiveStreamAsync(Guid djId);
         Task UpdateStreamAsync(DjStream stream);
         Task<(Track? CurrentTrack, TimeSpan Offset)> GetCurrentRadioStateAsync(Guid stationId);
+        Task<List<Track>> GetCurrentPlaylistOrderAsync(Guid stationId);
     }
 }
