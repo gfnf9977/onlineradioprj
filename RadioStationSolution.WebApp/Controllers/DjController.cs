@@ -402,25 +402,5 @@ namespace RadioStationSolution.WebApp.Controllers
             return RedirectToAction(nameof(ManageStreams));
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleRandomMode()
-        {
-            var djUser = await GetCurrentUserAsync();
-            if (djUser == null)
-                return RedirectToAction("Login", "Home");
-
-            var activeStream = await _stationService.GetActiveStreamAsync(djUser.UserId);
-            if (activeStream != null)
-                return RedirectToAction(nameof(ManageStreams));
-
-            if (activeStream != null)
-            {
-                activeStream.IsRandom = !activeStream.IsRandom;
-                await _stationService.UpdateStreamAsync(activeStream);
             }
-
-            return RedirectToAction(nameof(ManageStreams));
-        }
-    }
 }

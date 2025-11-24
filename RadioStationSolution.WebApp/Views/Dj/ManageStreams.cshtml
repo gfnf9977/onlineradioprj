@@ -74,22 +74,7 @@
         </div>
         @if (!isLive)
         {
-            <div class="col-auto">
-                <form asp-action="ToggleRandomMode" method="post" class="d-inline">
-                    @if (isRandom)
-                    {
-                        <button type="submit" class="btn btn-warning shadow-sm">
-                            <i class="bi bi-shuffle"></i> Вимкнути Shuffle
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="submit" class="btn btn-outline-secondary">
-                            <i class="bi bi-shuffle"></i> Увімкнути Shuffle
-                        </button>
-                    }
-                </form>
-            </div>
+            
         }
     </div>
 
