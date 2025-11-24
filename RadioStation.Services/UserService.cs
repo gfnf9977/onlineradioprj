@@ -37,10 +37,13 @@ namespace OnlineRadioStation.Services
             {
                 throw new Exception("Ваш акаунт заблоковано адміністратором.");
             }
-            if (user.PasswordHash == password)
+
+            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+            if (isPasswordValid)
             {
                 return user;
             }
+
             return null;
         }
 
@@ -51,11 +54,14 @@ namespace OnlineRadioStation.Services
             {
                 throw new Exception("Користувач з таким ім'ям вже існує.");
             }
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
             var newUser = new User
             {
                 UserId = Guid.NewGuid(),
                 Username = username,
-                PasswordHash = password,
+                PasswordHash = passwordHash,
                 Email = email,
                 Role = "User",
                 CreatedAt = DateTime.UtcNow
@@ -188,7 +194,7 @@ namespace OnlineRadioStation.Services
         {
             var votes = await _likeRepo.GetAll()
                 .Where(l => l.TrackId == trackId)
-                .ToListAsync(); 
+                .ToListAsync();
 
             int likes = votes.Count(l => l.IsLike);
             int dislikes = votes.Count(l => !l.IsLike);
@@ -197,7 +203,7 @@ namespace OnlineRadioStation.Services
         }
 
         public async Task<Dictionary<Guid, (int Likes, int Dislikes)>> GetVotesForTracksAsync(IEnumerable<Guid> trackIds)
-{
+        {
             var allVotes = await _likeRepo.GetAll()
                .Where(l => trackIds.Contains(l.TrackId))
                .ToListAsync();
@@ -209,12 +215,11 @@ namespace OnlineRadioStation.Services
                 var trackVotes = allVotes.Where(v => v.TrackId == trackId);
                 int likes = trackVotes.Count(v => v.IsLike);
                 int dislikes = trackVotes.Count(v => !v.IsLike);
-        
+
                 result[trackId] = (likes, dislikes);
-            } 
+            }
 
-    return result;
-}
-
+            return result;
+        }
     }
 }
