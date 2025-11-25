@@ -15,7 +15,6 @@ namespace OnlineRadioStation.Domain
         public User UploadedBy { get; set; } = null!;
         public ICollection<PlaybackQueue> Queues { get; set; } = new List<PlaybackQueue>();
         public ICollection<LikeDislike> LikesDislikes { get; set; } = new List<LikeDislike>();
-        // for the Visitor pattern
         public void Accept(IStatsVisitor visitor)
         {
             visitor.VisitTrack(this);

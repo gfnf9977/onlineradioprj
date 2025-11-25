@@ -46,45 +46,146 @@
     }
 }
 
+<style>
+    body {
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        color: #fff;
+        min-height: 100vh;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .station-header h1 {
+        font-weight: 900;
+        letter-spacing: -1px;
+        text-shadow: 0 0 20px rgba(255, 75, 135, 0.6);
+    }
+
+    .station-header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        transition: all 0.4s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 15px 35px rgba(255, 75, 135, 0.25);
+        transform: translateY(-5px);
+    }
+
+    #currentTrackName {
+        font-size: 1.7rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #ff4b87, #ff8b87);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .btn-danger {
+        background: linear-gradient(45deg, #ff0844, #ffb199);
+        border: none;
+        box-shadow: 0 10px 30px rgba(255, 8, 68, 0.4);
+    }
+
+    .btn-danger:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 40px rgba(255, 8, 68, 0.6);
+    }
+
+    .btn-success { background: #28a745 !important; border: none; }
+    .btn-danger.active { background: #dc3545 !important; border: none; }
+
+    .spinner-grow {
+        animation: pulse 1.5s infinite;
+    }
+
+    @@keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+
+    .live-badge {
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @@keyframes glow {
+        from { text-shadow: 0 0 10px #ff0844; }
+        to { text-shadow: 0 0 25px #ff0844, 0 0 35px #ff0844; }
+    }
+
+    .rating-btn {
+        transition: all 0.3s ease;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .rating-btn:hover {
+        transform: translateY(-4px);
+        background: rgba(255,255,255,0.2);
+    }
+</style>
+
 <div class="container mt-5 text-center">
-    <h1 class="display-4 fw-bold">@Model.StationName</h1>
-    <p class="lead text-muted">@Model.Description</p>
-    <hr class="my-4 w-50 mx-auto" />
-    <div id="offlineView" class="py-5" style="@(isOffline ? "" : "display:none;")">
-        <i class="bi bi-mic-mute-fill text-secondary" style="font-size: 5rem;"></i>
-        <h2 class="mt-3 text-secondary">Ефір завершено</h2>
-        <p>Діджей завершив трансляцію.</p>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary mt-3">На головну</a>
+    <div class="station-header mb-5">
+        <h1 class="display-3 fw-bold">@Model.StationName</h1>
+        <p class="lead text-white-50 mt-3">@Model.Description</p>
+        <hr class="w-25 mx-auto opacity-50" style="border-top: 2px solid #ff4b87;" />
     </div>
+
+    <div id="offlineView" class="py-5" style="@(isOffline ? "" : "display:none;")">
+        <i class="bi bi-broadcast text-secondary opacity-50" style="font-size: 7rem;"></i>
+        <h2 class="mt-4 text-white-50 fw-light">Ефір завершено</h2>
+        <p class="text-white-50">Діджей вже пішов спати. Повернемося скоро!</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-light btn-lg mt-4 px-5 rounded-pill">
+            <i class="bi bi-house-door me-2"></i>На головну
+        </a>
+    </div>
+
     <div id="onlineView" style="@(isOffline ? "display:none;" : "")">
+
         <div id="playOverlay" class="py-5" style="display:none;">
-            <div class="mb-4">
-                <div class="spinner-grow text-danger" role="status" style="width: 1rem; height: 1rem;"></div>
-                <span class="text-danger fw-bold ms-2">LIVE</span>
+            <div class="mb-5">
+                <div class="spinner-grow text-danger live-badge" role="status" style="width: 1.2rem; height: 1.2rem;"></div>
+                <span class="text-danger fw-bold ms-3 fs-3 live-badge">LIVE</span>
             </div>
-            <button id="btnStartRadio" class="btn btn-danger btn-lg rounded-circle shadow-lg" style="width: 80px; height: 80px;">
-                <i class="bi bi-play-fill fs-1"></i>
+            <button id="btnStartRadio" class="btn btn-danger btn-lg rounded-circle shadow-lg border-0" style="width: 100px; height: 100px;">
+                <i class="bi bi-play-fill" style="font-size: 3rem; margin-left: 6px;"></i>
             </button>
-            <p class="mt-3 text-muted">Натисніть, щоб підключитися</p>
+            <p class="mt-4 text-white-50 fs-5">Натисни — і в ефір!</p>
         </div>
-        <div id="playerContainer" style="display:none;" class="py-4">
-            <div class="card shadow-sm mx-auto border-0 bg-light" style="max-width: 500px;">
-                <div class="card-body text-center">
-                    <h3 id="currentTrackName" class="fw-bold text-dark mb-3">Завантаження...</h3>
-                    <div class="d-flex justify-content-center align-items-center gap-4 mb-4">
-                        <button id="btnDislike" class="btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center" style="width: 70px; height: 70px;" onclick="rateTrack(false)">
-                            <i id="iconDislike" class="bi bi-hand-thumbs-down fs-4"></i>
-                            <span id="countDislike" class="small fw-bold" style="font-size: 0.7rem;"></span>
+
+        <div id="playerContainer" style="display:none;" class="py-5">
+            <div class="card shadow-lg mx-auto border-0" style="max-width: 560px;">
+                <div class="card-body text-center py-5">
+                    <h3 id="currentTrackName" class="mb-4">Завантаження...</h3>
+
+                    <div class="d-flex justify-content-center align-items-center gap-5 mb-4">
+                        <button id="btnDislike" class="rating-btn rounded-circle p-4 d-flex flex-column align-items-center justify-content-center" style="width: 80px; height: 80px;" onclick="rateTrack(false)">
+                            <i id="iconDislike" class="bi bi-hand-thumbs-down fs-3"></i>
+                            <span id="countDislike" class="small fw-bold mt-1" style="font-size: 0.8rem;"></span>
                         </button>
-                        <button id="btnLike" class="btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center" style="width: 70px; height: 70px;" onclick="rateTrack(true)">
-                            <i id="iconLike" class="bi bi-hand-thumbs-up fs-4"></i>
-                            <span id="countLike" class="small fw-bold" style="font-size: 0.7rem;"></span>
+
+                        <button id="btnLike" class="rating-btn rounded-circle p-4 d-flex flex-column align-items-center justify-content-center" style="width: 80px; height: 80px;" onclick="rateTrack(true)">
+                            <i id="iconLike" class="bi bi-hand-thumbs-up fs-3"></i>
+                            <span id="countLike" class="small fw-bold mt-1" style="font-size: 0.8rem;"></span>
                         </button>
                     </div>
-                    <p class="text-muted small mb-0">Ви слухаєте прямий ефір</p>
-                    <div class="mt-3">
-                        <button onclick="toggleMute()" class="btn btn-sm btn-link text-secondary text-decoration-none">
-                            <i id="muteIcon" class="bi bi-volume-up-fill fs-5"></i>
+
+                    <p class="text-white-50 small mb-0">
+                        <i class="bi bi-broadcast-fill text-danger live-badge"></i>
+                        Ви слухаєте прямий ефір
+                    </p>
+
+                    <div class="mt-4">
+                        <button onclick="toggleMute()" class="btn btn-link text-white-50 text-decoration-none">
+                            <i id="muteIcon" class="bi bi-volume-up-fill fs-4"></i>
                         </button>
                         <audio id="audioPlayer" style="width: 0; height: 0;"></audio>
                     </div>
@@ -204,7 +305,7 @@
         window.toggleMute = function() {
             audio.muted = !audio.muted;
             var icon = document.getElementById('muteIcon');
-            icon.className = audio.muted ? "bi bi-volume-mute-fill fs-5" : "bi bi-volume-up-fill fs-5";
+            icon.className = audio.muted ? "bi bi-volume-mute-fill fs-4" : "bi bi-volume-up-fill fs-4";
         };
 
         window.rateTrack = async function(isLike) {
@@ -233,18 +334,16 @@
             var iconDislike = document.getElementById('iconDislike');
             var countLike = document.getElementById('countLike');
             var countDislike = document.getElementById('countDislike');
-            btnLike.className = "btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center";
-            btnDislike.className = "btn btn-outline-secondary rounded-circle p-3 d-flex flex-column align-items-center justify-content-center";
-            iconLike.className = "bi bi-hand-thumbs-up fs-4";
-            iconDislike.className = "bi bi-hand-thumbs-down fs-4";
+            btnLike.className = "rating-btn rounded-circle p-4 d-flex flex-column align-items-center justify-content-center";
+            btnDislike.className = "rating-btn rounded-circle p-4 d-flex flex-column align-items-center justify-content-center";
+            iconLike.className = "bi bi-hand-thumbs-up fs-3";
+            iconDislike.className = "bi bi-hand-thumbs-down fs-3";
             if (status === 1) {
-                btnLike.classList.remove('btn-outline-secondary');
                 btnLike.classList.add('btn-success');
-                iconLike.className = "bi bi-hand-thumbs-up-fill fs-4";
+                iconLike.className = "bi bi-hand-thumbs-up-fill fs-3";
             } else if (status === -1) {
-                btnDislike.classList.remove('btn-outline-secondary');
-                btnDislike.classList.add('btn-danger');
-                iconDislike.className = "bi bi-hand-thumbs-down-fill fs-4";
+                btnDislike.classList.add('btn-danger', 'active');
+                iconDislike.className = "bi bi-hand-thumbs-down-fill fs-3";
             }
             countLike.innerText = (likes > 0) ? likes : "";
             countDislike.innerText = (dislikes > 0) ? dislikes : "";

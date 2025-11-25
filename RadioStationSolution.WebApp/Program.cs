@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using OnlineRadioStation.Data;
 using OnlineRadioStation.Services;
 using OnlineRadioStation.Domain;
-using Microsoft.AspNetCore.StaticFiles; // <-- 1. ДОДАЙТЕ ЦЕЙ USING
+using Microsoft.AspNetCore.StaticFiles; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,10 +25,6 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSession();
 builder.Services.AddHttpContextAccessor();
 
-//builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
-//builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
-
-//builder.Services.AddScoped<IAudioProcessor, AudioProcessingFacade>();
 
 builder.Services.AddScoped<ListeningStatsVisitor>();
 
@@ -40,19 +36,16 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// app.UseHttpsRedirection(); // <-- 3. ВИМКНЕНО. Це прибирає попередження з консолі.
 
-// --- 2. ВИПРАВЛЕНО (MIME-типи) ---
-// Вчимо сервер розпізнавати .m3u8 та .ts файли
 var provider = new FileExtensionContentTypeProvider();
-provider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl"; // Тип для HLS плейлиста
-provider.Mappings[".ts"] = "video/mp2t"; // Тип для HLS сегмента
+provider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl"; 
+provider.Mappings[".ts"] = "video/mp2t"; 
 
 app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = provider 
 });
-// --------------------------------
+
 app.UseSession();
 app.UseRouting();
 

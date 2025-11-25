@@ -9,9 +9,7 @@ namespace RadioStationSolution.WebApp.Controllers
         [HttpPost] 
         public IActionResult Logout()
         {
-            // TODO: Очистити сесію або cookie, де зберігається інформація про користувача
-            // Наприклад, якщо використовуєте сесії:
-            // HttpContext.Session.Clear();
+
             HttpContext.Session.Clear();
 
             return RedirectToAction("Index", "Home");
@@ -19,8 +17,8 @@ namespace RadioStationSolution.WebApp.Controllers
 
         public IActionResult Profile()
         {
-            // TODO: Завантажити дані поточного користувача і передати у View
-            return View(); // Потрібно буде створити Views/Account/Profile.cshtml
+
+            return View(); 
         }
     }
 }

@@ -11,7 +11,6 @@ namespace OnlineRadioStation.Domain
         public Guid TrackId { get; set; }
         public bool IsLike { get; set; }
         public DateTime CreatedAt { get; set; }
-
         public User User { get; set; } = null!;
         public Track Track { get; set; } = null!;
     }

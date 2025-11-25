@@ -217,26 +217,20 @@ namespace RadioStationSolution.WebApp.Controllers
             });
         }
 
-        // === РОЗУМНИЙ МАРШРУТИЗАТОР ===
 [HttpGet]
 public async Task<IActionResult> Dashboard()
 {
-    // 1. Перевіряємо, чи є хтось у сесії
     var userIdStr = HttpContext.Session.GetString("CurrentUserId");
     
     if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
     {
-        // Якщо не залогінений -> на сторінку Входу
         return RedirectToAction("Login");
     }
 
-    // 2. Дізнаємося роль користувача
-    // (Використовуємо метод GetUserByIdAsync, який ми додали в UserService)
     var user = await _userService.GetUserByIdAsync(userId);
     
     if (user == null) return RedirectToAction("Login");
 
-    // 3. Перенаправляємо на відповідний дашборд
     return user.Role.ToLower() switch
     {
         "admin" => RedirectToAction("AdminDashboard"),

@@ -3,64 +3,204 @@
 }
 
 <style>
-    .register-container { max-width: 400px; margin: 50px auto; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background-color: #ffffff; }
-    .register-container h1 { text-align: center; margin-bottom: 25px; color: #333; }
-    .form-group { margin-bottom: 20px; }
-    .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-    .btn-register { width: 100%; padding: 12px; border: none; border-radius: 5px; background-color: #28a745; color: white; font-size: 16px; cursor: pointer; transition: background-color 0.2s; }
-    .btn-register:hover { background-color: #218838; }
-    .login-link { display: block; text-align: center; margin-top: 15px; }
-    .error-message { color: red; margin-bottom: 15px; text-align: center; }
-    .input-group { display: flex; }
-    .input-group .form-control { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-    .input-group .btn { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+    :root {
+        --primary: #ff2e63;
+        --primary-dark: #e02a56;
+        --accent: #08f5d8;
+        --dark: #0f0f1e;
+        --gray: #1a1a2e;
+    }
+
+    body {
+        background: linear-gradient(135deg, #0f0f1e 0%, #16213e 100%);
+        color: #fff;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .register-card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        max-width: 440px;
+        width: 100%;
+        padding: 44px 36px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .register-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 5px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 24px 24px 0 0;
+    }
+
+    .logo-glow {
+        filter: drop-shadow(0 0 30px rgba(255, 46, 99, 0.6));
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .form-control-custom {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 14px 18px;
+        color: #fff;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control-custom:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(255, 46, 99, 0.2);
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .form-control-custom::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-register {
+        background: linear-gradient(45deg, var(--primary), #ff6b9d);
+        border: none;
+        border-radius: 50px;
+        padding: 16px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        width: 100%;
+        margin-top: 24px;
+        box-shadow: 0 10px 30px rgba(255, 46, 99, 0.4);
+        transition: all 0.3s ease;
+    }
+
+    .btn-register:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(255, 46, 99, 0.6);
+    }
+
+    .input-group {
+        position: relative;
+    }
+
+    .input-group .btn-eye {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        border-radius: 12px;
+        width: 44px;
+        height: 44px;
+        color: #fff;
+        z-index: 10;
+        transition: all 0.3s;
+    }
+
+    .input-group .btn-eye:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+
+    .error-message {
+        background: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #ff6b6b;
+        padding: 14px 18px;
+        border-radius: 14px;
+        font-size: 0.95rem;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .login-link {
+        color: var(--accent);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .login-link:hover {
+        color: #fff;
+        text-shadow: 0 0 10px rgba(8, 245, 216, 0.5);
+    }
 </style>
 
-<div class="register-container">
-    <h1>Реєстрація</h1>
+<div class="register-card text-center">
+    <!-- Логотип -->
+    <div class="mb-4">
+        <img src="~/images/logo1.png" alt="Online Radio Station" class="img-fluid logo-glow" style="max-height: 90px;">
+    </div>
+
+    <h2 class="fw-bold mb-2" style="font-size: 2.1rem;">
+        Створи акаунт
+    </h2>
+    <p class="text-white-50 mb-5">Та приєднуйся до найкращої музичної тусовки</p>
 
     @if (ViewBag.Error != null)
     {
-        <p class="error-message">@ViewBag.Error</p>
+        <div class="error-message">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @ViewBag.Error
+        </div>
     }
 
     <form method="post" asp-action="Register">
-        <div class="form-group">
-            <label for="username">Ім'я користувача</label>
-            <input type="text" id="username" name="username" class="form-control" placeholder="Придумайте логін" required>
-        </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" class="form-control" placeholder="Введіть email" required>
+        <div class="mb-4">
+            <input type="text" id="username" name="username" class="form-control-custom w-100"
+                   placeholder="Придумайте крутий логін" required autofocus>
         </div>
 
-        <div class="form-group">
-            <label for="password">Пароль</label>
-            <div class="input-group">
-                <input type="password" id="password" name="password" class="form-control" placeholder="Придумайте пароль" required>
-                <button class="btn btn-outline-secondary" type="button" id="toggleRegPasswordBtn" onclick="togglePasswordVisibility('password', 'regEyeIcon')">
-                    <i id="regEyeIcon" class="bi bi-eye"></i>
-                </button>
-            </div>
+        <div class="mb-4">
+            <input type="email" id="email" name="email" class="form-control-custom w-100"
+                   placeholder="Ваша пошта" required>
         </div>
 
-        <button type="submit" class="btn-register mt-3">Зареєструватися</button>
+        <div class="mb-4 input-group">
+            <input type="password" id="password" name="password" class="form-control-custom w-100 pe-5"
+                   placeholder="Надійний пароль" required>
+            <button type="button" class="btn btn-eye" onclick="togglePassword()">
+                <i id="eyeIcon" class="bi bi-eye fs-5"></i>
+            </button>
+        </div>
+
+        <button type="submit" class="btn btn-register">
+            <i class="bi bi-stars me-2"></i>
+            Зареєструватися безкоштовно
+        </button>
     </form>
-    <a class="login-link" href="@Url.Action("Login", "Home")">Вже є акаунт? Увійти</a>
+
+    <div class="mt-4">
+        <span class="text-white-50">Вже з нами? </span>
+        <a asp-action="Login" class="login-link">
+            Увійти в ефір
+        </a>
+    </div>
 </div>
 
 <script>
-    function togglePasswordVisibility(inputId, iconId) {
-        var input = document.getElementById(inputId);
-        var icon = document.getElementById(iconId);
-        if (input.type === "password") {
-            input.type = "text";
-            icon.classList.remove("bi-eye");
-            icon.classList.add("bi-eye-slash");
+    function togglePassword() {
+        const input = document.getElementById('password');
+        const icon = document.getElementById('eyeIcon');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
         } else {
-            input.type = "password";
-            icon.classList.remove("bi-eye-slash");
-            icon.classList.add("bi-eye");
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
         }
     }
 </script>

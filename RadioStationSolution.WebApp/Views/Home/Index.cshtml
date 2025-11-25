@@ -9,163 +9,217 @@
 }
 
 <style>
-    .hero-section {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        color: white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    :root {
+        --primary: #ff2e63;
+        --dark: #0f0f1e;
     }
 
-    .station-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: none;
+    body { background: var(--dark); color: #fff; font-family: 'Inter', 'Segoe UI', sans-serif; }
+
+    .hero {
+        min-height: 100vh;
+        background: radial-gradient(circle at top right, #1a1a2e 0%, #0f0f1e 70%);
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: url('/images/phone.png') no-repeat right 10% center / 45% auto;
+        opacity: 0.25;
+        pointer-events: none;
+    }
+
+    .logo-glow { filter: drop-shadow(0 0 30px rgba(255,46,99,0.6)); animation: float 6s ease-in-out infinite; }
+    @@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+    .glass-card {
+        background: rgba(255,255,255,0.07);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 24px;
+        transition: all 0.4s ease;
+        position: relative;
         overflow: hidden;
     }
 
-    .station-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+    .glass-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 6px;
+        background: var(--gradient);
+        border-radius: 24px 24px 0 0;
     }
 
-    .station-cover {
-        height: 150px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-        color: white;
-        font-size: 3rem;
+    .glass-card:hover {
+        transform: translateY(-12px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.4);
     }
 
-    .col:nth-child(2n) .station-cover { background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%); }
-    .col:nth-child(3n) .station-cover { background: linear-gradient(to top, #a8edea 0%, #fed6e3 100%); }
-    .col:nth-child(4n) .station-cover { background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%); }
+    .station-accent-1 { --gradient: linear-gradient(90deg, #ff6b6b, #feca57); }
+    .station-accent-2 { --gradient: linear-gradient(90deg, #48dbfb, #0abde3); }
+    .station-accent-3 { --gradient: linear-gradient(90deg, #1dd1a1, #10ac84); }
+    .station-accent-4 { --gradient: linear-gradient(90deg, #ff9ff3, #c77dff); }
+    .station-accent-5 { --gradient: linear-gradient(90deg, #feca57, #ff9ff3); }
+    .station-accent-6 { --gradient: linear-gradient(90deg, #54a0ff, #2e86de); }
 
-    .feature-icon {
-        font-size: 2.5rem;
-        color: #0d6efd;
-        margin-bottom: 1rem;
+    .live-pulse {
+        animation: pulse 2s infinite;
+        background: #ff2e63;
+        padding: 4px 10px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+    }
+
+    @@keyframes pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
+
+    .btn-primary-custom {
+        background: linear-gradient(45deg, var(--primary), #ff6b9d);
+        border: none;
+        border-radius: 50px;
+        padding: 14px 32px;
+        font-weight: 700;
+        box-shadow: 0 10px 30px rgba(255,46,99,0.4);
+        transition: all 0.3s;
+    }
+
+    .btn-primary-custom:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(255,46,99,0.6);
+    }
+
+    .section-title {
+        font-weight: 900;
+        background: linear-gradient(90deg, #ff2e63, #00d2d3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .phone-mockup {
+        max-width: 380px;
+        border-radius: 40px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        border: 8px solid #111;
     }
 </style>
 
-<div class="p-5 mb-5 rounded-3 hero-section text-center">
-    <div class="container-fluid py-3">
-        <div class="mb-3">
-            <i class="bi bi-boombox-fill" style="font-size: 4rem;"></i>
-        </div>
-        <h1 class="display-4 fw-bold">Твій ритм. Твоя хвиля.</h1>
-        <p class="col-md-8 fs-5 mx-auto mt-3">
-            Слухай найкращі хіти, дізнавайся новини та створюй власний настрій разом з
-            <strong>Online Radio Station</strong>. Якісний звук без перешкод.
-        </p>
+<section class="hero position-relative">
+    <div class="container position-relative z-3">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6 text-center text-lg-start">
+                <img src="~/images/logo1.png" alt="Logo" class="img-fluid mb-4 logo-glow" style="max-height: 120px;">
+                <h1 class="display-3 fw-bold mb-4">Твій ритм.<br><span style="color:#ff2e63;">Твоя хвиля.</span></h1>
+                <p class="lead mb-5 opacity-90" style="font-size:1.3rem;">
+                    Найкращі діджеї, прямі ефіри, голосування за треки — музика, яка слухає тебе.
+                </p>
 
-        <div class="d-flex justify-content-center gap-3 mt-5">
-            @if (isLoggedIn)
-            {
-                <a class="btn btn-light btn-lg px-5 fw-bold text-primary" asp-controller="Home" asp-action="Dashboard">
-                    <i class="bi bi-speedometer2"></i> Перейти в Кабінет
-                </a>
-            }
-            else
-            {
-                <a class="btn btn-light btn-lg px-5 fw-bold text-primary" asp-controller="Home" asp-action="Login">
-                    <i class="bi bi-box-arrow-in-right"></i> Увійти
-                </a>
-                <a class="btn btn-outline-light btn-lg px-5" asp-controller="Home" asp-action="Register">
-                    Реєстрація
-                </a>
-            }
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
+                    @if (isLoggedIn)
+                    {
+                        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-primary-custom btn-lg">
+                            <i class="bi bi-speedometer2 me-2"></i> Кабінет
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="Login" class="btn btn-primary-custom btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Увійти
+                        </a>
+                        <a asp-controller="Home" asp-action="Register" class="btn btn-outline-light btn-lg rounded-pill border-2">
+                            Реєстрація
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-6 text-center mt-5 mt-lg-0">
+                <img src="~/images/phone.png" alt="Radio на телефоні" class="img-fluid phone-mockup" style="transform: rotate(-8deg);">
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-<div class="container mb-5">
-    <div class="d-flex align-items-center mb-4 border-bottom pb-2">
-        <i class="bi bi-broadcast text-primary me-2 fs-3"></i>
-        <h2 class="mb-0">В ефірі зараз</h2>
-    </div>
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title display-5">В ефірі зараз</h2>
+            <p class="text-white-50">Обери свій вайб</p>
+        </div>
 
-    @if (Model != null && Model.Any())
-    {
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-            @foreach (var station in Model)
-            {
-                <div class="col">
-                    <div class="card h-100 shadow-sm station-card">
-                        <div class="station-cover">
-                            <i class="bi bi-music-note-beamed"></i>
-                        </div>
+        @if (Model != null && Model.Any())
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-5">
+                @{ int index = 0; }
+                @foreach (var station in Model)
+                {
+                    string accentClass = $"station-accent-{((index % 6) + 1)}";
+                    index++;
 
-                        <div class="card-body text-center">
-                            <h5 class="card-title fw-bold">@station.StationName</h5>
-                            <p class="card-text text-muted small">
-                                @if(!string.IsNullOrEmpty(station.Description))
-                                {
-                                    @station.Description
-                                }
-                                else
-                                {
-                                    <span>Найкраща музика для вас...</span>
-                                }
+                    <div class="col">
+                        <div class="glass-card h-100 p-4 text-center @accentClass">
+                            <div class="d-flex justify-content-center mb-4">
+                                <div class="bg-white bg-opacity-10 rounded-circle p-4">
+                                    <i class="bi bi-broadcast-fill" style="font-size: 3rem; color: rgba(255,255,255,0.9);"></i>
+                                </div>
+                            </div>
+
+                            <h4 class="fw-bold mb-3">@station.StationName</h4>
+                            <p class="small text-white-70 mb-4" style="min-height: 48px;">
+                                @(string.IsNullOrEmpty(station.Description) ? "Тільки найкращі хіти 24/7" : station.Description)
                             </p>
-                        </div>
 
-                        <div class="card-footer bg-white border-top-0 text-center pb-4">
-                            <a asp-controller="Home" asp-action="Login"
-                               class="btn btn-primary rounded-pill px-4 w-75 shadow-sm">
-                                <i class="bi bi-play-circle-fill me-1"></i> Слухати
+                            <div class="d-flex justify-content-center gap-2 align-items-center mb-3">
+                                <span class="live-pulse text-white">
+                                    <i class="bi bi-dot"></i> LIVE
+                                </span>
+                            </div>
+
+                            <a asp-controller="Home" asp-action="Station" asp-route-id="@station.StationId"
+                               class="btn btn-light btn-lg rounded-pill w-100 fw-bold shadow-sm">
+                                <i class="bi bi-play-fill me-2"></i>
+                                Слухати
                             </a>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="text-center py-5 text-muted">
-            <i class="bi bi-mic-mute fs-1"></i>
-            <p class="mt-2">Наразі немає активних станцій. Завітайте пізніше!</p>
-        </div>
-    }
-</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-mic-mute-fill display-1 text-white-50"></i>
+                <p class="mt-3 text-white-50">Поки що всі діджеї сплять... Скоро буде гучно!</p>
+            </div>
+        }
+    </div>
+</section>
 
-<div class="bg-light py-5">
+<section class="py-5" style="background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">Чому обирають нас?</h2>
-            <p class="text-muted">Ми дбаємо про якість звуку та зручність використання.</p>
-        </div>
-
-        <div class="row g-4 text-center">
-            <div class="col-md-4">
-                <div class="feature-icon bg-white shadow-sm rounded-circle d-inline-flex p-3 align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                    <i class="bi bi-file-earmark-music"></i>
-                </div>
-                <h4 class="mt-3">Hi-Res Audio</h4>
-                <p class="text-muted px-3">
-                    Підтримка бітрейту до 224 kb/s. Насолоджуйтесь кожною нотою завдяки HLS-трансляції.
-                </p>
+        <div class="row align-items-center">
+            <div class="col-lg-5 text-center">
+                <img src="~/images/login.png" alt="Авторизація" class="img-fluid phone-mockup" style="transform: rotate(6deg);">
+                <p class="mt-4 text-white-50">5 секунд — і ти в ефірі</p>
             </div>
-
-            <div class="col-md-4">
-                <div class="feature-icon bg-white shadow-sm rounded-circle d-inline-flex p-3 align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                    <i class="bi bi-globe"></i>
+            <div class="col-lg-7">
+                <h2 class="section-title display-5 mb-5">Чому ми?</h2>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3"><div class="bg-white bg-opacity-10 rounded-circle p-3 flex-shrink-0" style="width:64px;height:64px;"><i class="bi bi-file-earmark-music fs-3"></i></div><div><h5 class="fw-bold">Кристальний звук</h5><p class="text-white-50">HLS до 224 kbps</p></div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3"><div class="bg-white bg-opacity-10 rounded-circle p-3 flex-shrink-0" style="width:64px;height:64px;"><i class="bi bi-phone-vibrate fs-3"></i></div><div><h5 class="fw-bold">Всюди з тобою</h5><p class="text-white-50">ПК, телефон, планшет</p></div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3"><div class="bg-white bg-opacity-10 rounded-circle p-3 flex-shrink-0" style="width:64px;height:64px;"><i class="bi bi-hand-thumbs-up fs-3"></i></div><div><h5 class="fw-bold">Ти впливаєш</h5><p class="text-white-50">Лайки/дизлайки = плейлист</p></div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex gap-3"><div class="bg-white bg-opacity-10 rounded-circle p-3 flex-shrink-0" style="width:64px;height:64px;"><i class="bi bi-people fs-3"></i></div><div><h5 class="fw-bold">Живі діджеї</h5><p class="text-white-50">Реальні люди, реальний вайб</p></div></div>
+                    </div>
                 </div>
-                <h4 class="mt-3">Доступність</h4>
-                <p class="text-muted px-3">
-                    Слухайте улюблене радіо на будь-якому пристрої: ПК, планшет або смартфон.
-                </p>
-            </div>
-
-            <div class="col-md-4">
-                <div class="feature-icon bg-white shadow-sm rounded-circle d-inline-flex p-3 align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                    <i class="bi bi-people"></i>
-                </div>
-                <h4 class="mt-3">Спільнота</h4>
-                <p class="text-muted px-3">
-                    Діджеї створюють контент для вас. Реєструйтесь, щоб отримати доступ до всіх функцій.
-                </p>
             </div>
         </div>
     </div>
-</div>
+</section>

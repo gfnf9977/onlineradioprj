@@ -20,7 +20,7 @@ namespace OnlineRadioStation.Domain
 
         public void VisitQueue(PlaybackQueue queue)
         {
-            TotalTracks += 1; // кількість треків у черзі
+            TotalTracks += 1; 
             Console.WriteLine($"[Stats] Черга {queue.QueueId}: {queue.QueuePosition} позиція");
         }
     }

@@ -61,7 +61,6 @@ namespace OnlineRadioStation.Domain
 
         public async Task<TimeSpan> GetTrackDurationAsync(string inputPath)
 {
-    // 1. Перевірка наявності ffprobe
     if (!File.Exists(FfprobePath))
     {
         Console.WriteLine($"[Adapter ERROR] ffprobe.exe НЕ ЗНАЙДЕНО за шляхом: {FfprobePath}");
@@ -76,7 +75,7 @@ namespace OnlineRadioStation.Domain
         Arguments = args,
         UseShellExecute = false,
         RedirectStandardOutput = true,
-        RedirectStandardError = true, // Читаємо помилки теж
+        RedirectStandardError = true, 
         CreateNoWindow = true
     };
 
@@ -84,10 +83,9 @@ namespace OnlineRadioStation.Domain
     if (process == null) return TimeSpan.Zero;
 
     var output = await process.StandardOutput.ReadToEndAsync();
-    var error = await process.StandardError.ReadToEndAsync(); // Читаємо помилки
+    var error = await process.StandardError.ReadToEndAsync(); 
     await process.WaitForExitAsync();
 
-    // 2. Виводимо результат у консоль
     Console.WriteLine($"[Adapter] FFprobe Raw Output: '{output.Trim()}'");
     
     if (!string.IsNullOrEmpty(error))
@@ -95,8 +93,6 @@ namespace OnlineRadioStation.Domain
         Console.WriteLine($"[Adapter ERROR] FFprobe Error: {error}");
     }
 
-    // 3. Парсимо (з заміною крапки на кому, якщо локаль українська/російська)
-    // FFprobe завжди повертає крапку (наприклад, "245.500000"), тому InvariantCulture має працювати.
     if (double.TryParse(output.Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double seconds))
     {
         var duration = TimeSpan.FromSeconds(seconds);
