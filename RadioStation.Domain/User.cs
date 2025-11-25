@@ -17,7 +17,6 @@ namespace OnlineRadioStation.Domain
         public ICollection<RadioStationEntity> CreatedStations { get; set; } = new List<RadioStationEntity>();
         public ICollection<PlaybackQueue> AddedQueues { get; set; } = new List<PlaybackQueue>();
         public ICollection<SavedStation> SavedStations { get; set; } = new List<SavedStation>();
-        public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<LikeDislike> LikesDislikes { get; set; } = new List<LikeDislike>();
         public ICollection<DjStream> DjStreams { get; set; } = new List<DjStream>();
     }

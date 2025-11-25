@@ -4,6 +4,8 @@ using OnlineRadioStation.Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace OnlineRadioStation.Services
@@ -22,6 +24,43 @@ namespace OnlineRadioStation.Services
             _userRepository = userRepository;
             _savedRepo = savedRepo;
             _likeRepo = likeRepo;
+        }
+
+        private void SendEmail(string toEmail, string subject, string body)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    var fromAddress = new MailAddress("davidove122@gmail.com", "Online Radio Station");
+                    var toAddress = new MailAddress(toEmail);
+                    const string fromPassword = "dbir jenc bixu ncra";
+
+                    var smtp = new SmtpClient
+                    {
+                        Host = "smtp.gmail.com",
+                        Port = 587,
+                        EnableSsl = true,
+                        DeliveryMethod = SmtpDeliveryMethod.Network,
+                        UseDefaultCredentials = false,
+                        Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
+                    };
+
+                    using (var message = new MailMessage(fromAddress, toAddress)
+                    {
+                        Subject = subject,
+                        Body = body,
+                        IsBodyHtml = true
+                    })
+                    {
+                        smtp.Send(message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to send email: {ex.Message}");
+                }
+            });
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -68,6 +107,18 @@ namespace OnlineRadioStation.Services
             };
             _userRepository.AddEntity(newUser);
             await _userRepository.SaveChangesAsync();
+
+            string body = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;'>
+                    <h2 style='color: #0d6efd;'>Ласкаво просимо, {username}!</h2>
+                    <p>Ви успішно зареєструвалися на <strong>Online Radio Station</strong>.</p>
+                    <p>Тепер ви можете слухати музику, створювати плейлисти улюбленого та багато іншого.</p>
+                    <hr>
+                    <p style='font-size: 12px; color: #888;'>Це автоматичний лист, не відповідайте на нього.</p>
+                </div>";
+
+            SendEmail(email, "Успішна реєстрація", body);
+
             return newUser;
         }
 
@@ -92,10 +143,41 @@ namespace OnlineRadioStation.Services
             var user = await _userRepository.GetById(id);
             if (user != null)
             {
+                string oldRole = user.Role;
+                
                 user.Role = newRole;
                 user.AssignedStationId = stationId;
+                
                 _userRepository.UpdateEntity(user);
                 await _userRepository.SaveChangesAsync();
+
+                if (oldRole != newRole)
+                {
+                    string subject = "Зміна статусу акаунту";
+                    string body = "";
+
+                    if (newRole == "Banned")
+                    {
+                        body = "<h2 style='color: red;'>Ваш акаунт заблоковано!</h2><p>Адміністратор обмежив ваш доступ до сервісу.</p>";
+                    }
+                    else if (newRole == "Dj")
+                    {
+                        body = "<h2 style='color: green;'>Вітаємо в команді!</h2><p>Вам надано права <strong>Діджея</strong>.</p>";
+                        if (stationId != null)
+                        {
+                            body += "<p>Зайдіть у свій кабінет, щоб побачити призначену станцію.</p>";
+                        }
+                    }
+                    else if (newRole == "User" && oldRole == "Banned")
+                    {
+                        body = "<h2>Ваш акаунт розблоковано!</h2><p>Ви знову можете користуватися сервісом.</p>";
+                    }
+
+                    if (!string.IsNullOrEmpty(body))
+                    {
+                        SendEmail(user.Email, subject, body);
+                    }
+                }
             }
         }
 
