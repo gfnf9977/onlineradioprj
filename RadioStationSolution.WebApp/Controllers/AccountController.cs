@@ -12,6 +12,7 @@ namespace RadioStationSolution.WebApp.Controllers
             // TODO: Очистити сесію або cookie, де зберігається інформація про користувача
             // Наприклад, якщо використовуєте сесії:
             // HttpContext.Session.Clear();
+            HttpContext.Session.Clear();
 
             return RedirectToAction("Index", "Home");
         }

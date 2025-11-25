@@ -23,6 +23,7 @@ builder.Services.AddScoped<ISavedStationRepository, SavedStationRepository>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSession();
+builder.Services.AddHttpContextAccessor();
 
 //builder.Services.AddScoped<IAudioConverter, FFmpegAdapter>();
 //builder.Services.AddScoped<StreamFactory, BitrateStreamFactory>();
