@@ -1,21 +1,17 @@
 @using Microsoft.AspNetCore.Http
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 @model IEnumerable<OnlineRadioStation.Domain.RadioStationEntity>
-
 @{
     ViewData["Title"] = "Головна";
     var userId = HttpContextAccessor.HttpContext.Session.GetString("CurrentUserId");
     bool isLoggedIn = !string.IsNullOrEmpty(userId);
 }
-
 <style>
     :root {
         --primary: #ff2e63;
         --dark: #0f0f1e;
     }
-
     body { background: var(--dark); color: #fff; font-family: 'Inter', 'Segoe UI', sans-serif; }
-
     .hero {
         min-height: 100vh;
         background: radial-gradient(circle at top right, #1a1a2e 0%, #0f0f1e 70%);
@@ -23,7 +19,6 @@
         display: flex;
         align-items: center;
     }
-
     .hero::before {
         content: '';
         position: absolute;
@@ -32,10 +27,8 @@
         opacity: 0.25;
         pointer-events: none;
     }
-
     .logo-glow { filter: drop-shadow(0 0 30px rgba(255,46,99,0.6)); animation: float 6s ease-in-out infinite; }
     @@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-
     .glass-card {
         background: rgba(255,255,255,0.07);
         backdrop-filter: blur(16px);
@@ -45,7 +38,6 @@
         position: relative;
         overflow: hidden;
     }
-
     .glass-card::before {
         content: '';
         position: absolute;
@@ -53,19 +45,16 @@
         background: var(--gradient);
         border-radius: 24px 24px 0 0;
     }
-
     .glass-card:hover {
         transform: translateY(-12px);
         box-shadow: 0 25px 50px rgba(0,0,0,0.4);
     }
-
     .station-accent-1 { --gradient: linear-gradient(90deg, #ff6b6b, #feca57); }
     .station-accent-2 { --gradient: linear-gradient(90deg, #48dbfb, #0abde3); }
     .station-accent-3 { --gradient: linear-gradient(90deg, #1dd1a1, #10ac84); }
     .station-accent-4 { --gradient: linear-gradient(90deg, #ff9ff3, #c77dff); }
     .station-accent-5 { --gradient: linear-gradient(90deg, #feca57, #ff9ff3); }
     .station-accent-6 { --gradient: linear-gradient(90deg, #54a0ff, #2e86de); }
-
     .live-pulse {
         animation: pulse 2s infinite;
         background: #ff2e63;
@@ -73,9 +62,7 @@
         border-radius: 50px;
         font-size: 0.8rem;
     }
-
     @@keyframes pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
-
     .btn-primary-custom {
         background: linear-gradient(45deg, var(--primary), #ff6b9d);
         border: none;
@@ -85,19 +72,16 @@
         box-shadow: 0 10px 30px rgba(255,46,99,0.4);
         transition: all 0.3s;
     }
-
     .btn-primary-custom:hover {
         transform: translateY(-3px);
         box-shadow: 0 15px 40px rgba(255,46,99,0.6);
     }
-
     .section-title {
         font-weight: 900;
         background: linear-gradient(90deg, #ff2e63, #00d2d3);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-
     .phone-mockup {
         max-width: 380px;
         border-radius: 40px;
@@ -105,7 +89,6 @@
         border: 8px solid #111;
     }
 </style>
-
 <section class="hero position-relative">
     <div class="container position-relative z-3">
         <div class="row align-items-center min-vh-100">
@@ -115,7 +98,6 @@
                 <p class="lead mb-5 opacity-90" style="font-size:1.3rem;">
                     Найкращі діджеї, прямі ефіри, голосування за треки — музика, яка слухає тебе.
                 </p>
-
                 <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
                     @if (isLoggedIn)
                     {
@@ -140,14 +122,12 @@
         </div>
     </div>
 </section>
-
 <section class="py-5">
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="section-title display-5">В ефірі зараз</h2>
             <p class="text-white-50">Обери свій вайб</p>
         </div>
-
         @if (Model != null && Model.Any())
         {
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-5">
@@ -156,7 +136,6 @@
                 {
                     string accentClass = $"station-accent-{((index % 6) + 1)}";
                     index++;
-
                     <div class="col">
                         <div class="glass-card h-100 p-4 text-center @accentClass">
                             <div class="d-flex justify-content-center mb-4">
@@ -164,23 +143,31 @@
                                     <i class="bi bi-broadcast-fill" style="font-size: 3rem; color: rgba(255,255,255,0.9);"></i>
                                 </div>
                             </div>
-
                             <h4 class="fw-bold mb-3">@station.StationName</h4>
                             <p class="small text-white-70 mb-4" style="min-height: 48px;">
                                 @(string.IsNullOrEmpty(station.Description) ? "Тільки найкращі хіти 24/7" : station.Description)
                             </p>
-
                             <div class="d-flex justify-content-center gap-2 align-items-center mb-3">
                                 <span class="live-pulse text-white">
                                     <i class="bi bi-dot"></i> LIVE
                                 </span>
                             </div>
-
-                            <a asp-controller="Home" asp-action="Station" asp-route-id="@station.StationId"
-                               class="btn btn-light btn-lg rounded-pill w-100 fw-bold shadow-sm">
-                                <i class="bi bi-play-fill me-2"></i>
-                                Слухати
-                            </a>
+                            @if (isLoggedIn)
+                            {
+                                <a asp-controller="Home" asp-action="Dashboard"
+                                   class="btn btn-light btn-lg rounded-pill w-100 fw-bold shadow-sm">
+                                    <i class="bi bi-speedometer2 me-2"></i>
+                                    В кабінет
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Home" asp-action="Login"
+                                   class="btn btn-light btn-lg rounded-pill w-100 fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                                    Слухати (Вхід)
+                                </a>
+                            }
                         </div>
                     </div>
                 }
@@ -195,7 +182,6 @@
         }
     </div>
 </section>
-
 <section class="py-5" style="background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);">
     <div class="container">
         <div class="row align-items-center">

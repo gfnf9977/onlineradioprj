@@ -7,7 +7,6 @@
 <div class="container" style="max-width: 500px;">
     <h2>Редагування користувача</h2>
     <hr />
-
     <div class="card shadow-sm">
         <div class="card-body">
             <h4 class="card-title text-primary">@Model.Username</h4>
@@ -17,9 +16,9 @@
                 <input type="hidden" name="userId" value="@Model.UserId" />
                 <div class="mb-3">
                     <label for="role" class="form-label fw-bold">Оберіть нову роль:</label>
-                    <select name="role" class="form-select" asp-items="rolesList"></select>
+                    <select id="roleSelect" name="role" class="form-select" asp-items="rolesList"></select>
                 </div>
-                <div class="mb-3">
+                <div id="stationDiv" class="mb-3" style="display: none;">
                     <label for="assignedStationId" class="form-label fw-bold">Прив'язати до станції (для DJ):</label>
                     <select name="assignedStationId" class="form-select" asp-items="stationsList">
                         <option value="">-- Не призначено --</option>
@@ -34,3 +33,21 @@
         </div>
     </div>
 </div>
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var roleSelect = document.getElementById("roleSelect");
+            var stationDiv = document.getElementById("stationDiv");
+            function toggleStationField() {
+                var selectedRole = roleSelect.value.toLowerCase();
+                if (selectedRole === "dj") {
+                    stationDiv.style.display = "block";
+                } else {
+                    stationDiv.style.display = "none";
+                }
+            }
+            toggleStationField();
+            roleSelect.addEventListener("change", toggleStationField);
+        });
+    </script>
+}
